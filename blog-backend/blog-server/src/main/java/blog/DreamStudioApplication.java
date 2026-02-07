@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
@@ -22,13 +21,13 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @MapperScan("blog.mapper")
 @Slf4j
 @EnableScheduling
-public class ElevenBlogApplication
+public class DreamStudioApplication
 {
 
     public static void main(String[] args)
     {
         // 启动Spring Boot应用程序
-        SpringApplication.run(ElevenBlogApplication.class, args);
+        SpringApplication.run(DreamStudioApplication.class, args);
         log.info("Eleven博客系统启动成功！");
     }
 }
