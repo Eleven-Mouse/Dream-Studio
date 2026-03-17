@@ -52,9 +52,7 @@
         <el-menu-item index="/about"
           ><el-icon><UserFilled /></el-icon>About</el-menu-item
         >
-        <el-menu-item index="/forum"
-          ><el-icon><ChatDotRound /></el-icon>Forum</el-menu-item
-        >
+
         <el-menu-item index="/friendlinks"
           ><el-icon><Link /></el-icon>Links</el-menu-item
         >
@@ -105,6 +103,7 @@ import {
   ChatDotRound,
 } from '@element-plus/icons-vue'
 import ThemeSwitcher from './ThemeSwitcher.vue'
+
 
 const route = useRoute()
 const router = useRouter()
