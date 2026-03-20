@@ -3,24 +3,16 @@
     <el-text class="mx-1">
       <el-card class="info-card">
         <div class="avatar-section">
-          <el-avatar shape="square" :size="100" :src="profile.avatar">{{ profileInitial }}</el-avatar>
+          <el-avatar shape="square" :size="100" :src="profile.avatar">{{
+            profileInitial
+          }}</el-avatar>
         </div>
         <div class="info-section">
           <h3>{{ profile.nickname }}</h3>
           <p>{{ profile.bio }}</p>
         </div>
-        <div class="social-links">
-          <a href="javascript:void(0)" @click="router.push('/profile')"
-            ><el-icon><ChatLineRound /></el-icon
-          ></a>
-          <a :href="profile.email ? `mailto:${profile.email}` : 'javascript:void(0)'"
-            ><el-icon><Message /></el-icon
-          ></a>
-          <a href="javascript:void(0)" @click="copyProfileLabel"
-            ><el-icon><Share /></el-icon
-          ></a>
-        </div> </el-card
-    ></el-text>
+      </el-card></el-text
+    >
   </div>
 </template>
 

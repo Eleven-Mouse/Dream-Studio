@@ -99,44 +99,44 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, defineProps } from "vue";
-import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
-import { getAllCategories } from "@/api/category";
-import { getAllTags } from "@/api/tags";
-import { createArticle, getArticleById, updateArticle } from "@/api/article";
-import { useRoute } from "vue-router";
-import { MdEditor } from "md-editor-v3";
-import "md-editor-v3/lib/style.css";
-import { uploadImage } from "@/api/upload";
+import { ref, onMounted, watch, defineProps } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getAllCategories } from '@/api/category'
+import { getAllTags } from '@/api/tags'
+import { createArticle, getArticleById, updateArticle } from '@/api/article'
+import { MdEditor } from 'md-editor-v3'
+import 'md-editor-v3/lib/style.css'
+import { uploadImage } from '@/api/upload'
 
-const router = useRouter();
-const articleFormRef = ref(null);
-const loading = ref(false);
-const route = useRoute();
+const router = useRouter()
+const articleFormRef = ref(null)
+const loading = ref(false)
+const route = useRoute()
+const uploadBaseUrl = import.meta.env.VITE_APP_UPLOAD_URL || ''
 
 const articleForm = ref({
   id: null,
-  title: "",
-  content: "",
-  summary: "",
+  title: '',
+  content: '',
+  summary: '',
   categoryId: null,
   tags: [],
-  coverImage: "",
+  coverImage: '',
   isComment: 1,
   status: 0,
   publishTime: null,
-});
+})
 
-const categories = ref([]);
-const tagsList = ref([]);
+const categories = ref([])
+const tagsList = ref([])
 
 const props = defineProps({
   initData: {
     type: Object,
     default: () => null,
   },
-});
+})
 
 watch(
   () => props.initData,
@@ -149,75 +149,75 @@ watch(
   },
 
   {
-    immediate: true, //立即执行
+      immediate: true, //立即执行
     deep: true,
   }
-);
+)
 
 const rules = ref({
-  title: [{ required: true, message: "请输入文章标题", trigger: "blur" }],
-  content: [{ required: true, message: "请输入文章内容", trigger: "blur" }],
-  categoryId: [{ required: true, message: "请选择分类", trigger: "change" }],
-});
+  title: [{ required: true, message: '请输入文章标题', trigger: 'blur' }],
+  content: [{ required: true, message: '请输入文章内容', trigger: 'blur' }],
+  categoryId: [{ required: true, message: '请选择分类', trigger: 'change' }],
+})
 
 const submitArticle = async (status) => {
-  loading.value = true;
+  loading.value = true
   const articleData = {
     ...articleForm.value,
-    tags: articleForm.value.tags.join(","),
+    tags: articleForm.value.tags.join(','),
     status: status,
-  };
+  }
 
   try {
     if (articleForm.value.id) {
-      console.log("正在更新文章", articleForm.value);
-
-      await updateArticle(articleData.id, articleData);
+      await updateArticle(articleData.id, articleData)
+      ElMessage.success(status === 1 ? '文章更新成功' : '草稿已更新')
     } else {
-      await createArticle(articleData);
-      ElMessage.success(status === 1 ? "文章发布成功" : "草稿保存成功");
+      await createArticle(articleData)
+      ElMessage.success(status === 1 ? '文章发布成功' : '草稿保存成功')
     }
-    router.push("/articlemgmt");
+    router.push('/admin/content')
   } catch (error) {
-    console.error("Failed to submit article:", error);
-    ElMessage.error("操作失败，请重试");
+    console.error('Failed to submit article:', error)
+    ElMessage.error('操作失败，请重试')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
+
 onMounted(async () => {
   try {
-    categories.value = await getAllCategories();
-    tagsList.value = await getAllTags();
+    categories.value = await getAllCategories()
+    tagsList.value = await getAllTags()
   } catch (error) {
-    console.error("Failed to load categories or tags:", error);
-    ElMessage.error("加载分类或标签失败");
+    console.error('Failed to load categories or tags:', error)
+    ElMessage.error('加载分类或标签失败')
   }
 
-  const articleId = route.params.id;
+  const articleId = route.params.id
   if (articleId) {
-    await loadArticleDetail(articleId);
+    await loadArticleDetail(articleId)
   }
-});
+})
+
 const saveDraft = () => {
-  submitArticle(0);
-};
+  submitArticle(0)
+}
 
 const publishArticle = () => {
   articleFormRef.value.validate((valid) => {
     if (valid) {
-      submitArticle(1);
+      submitArticle(1)
     } else {
-      ElMessage.error("请填写所有必填项");
-      return false;
+      ElMessage.error('请填写所有必填项')
+      return false
     }
-  });
-};
+  })
+}
 
 const loadArticleDetail = async (id) => {
   try {
-    const res = await getArticleById(id);
-    const data = res;
+    const data = await getArticleById(id)
 
     articleForm.value = {
       id: data.id,
@@ -228,12 +228,18 @@ const loadArticleDetail = async (id) => {
       categoryId: data.categoryId, // 确保类型一致(Number/String)
       isComment: data.isComment,
       status: data.status,
-      tags: data.tags,
-    };
+      tags: Array.isArray(data.tags)
+        ? data.tags
+        : String(data.tags || '')
+            .split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((item) => Number(item) || item),
+    }
   } catch (error) {
-    console.error("获取详情失败", error);
+    console.error('获取详情失败', error)
   }
-};
+}
 
 /**
  * @param {Array<File>} files
@@ -243,40 +249,34 @@ const handleUploadImage = async (files, callback) => {
   try {
     const res = await Promise.all(
       files.map((file) => {
-        // 关键点 1: 添加 reject 参数
         return new Promise((resolve, reject) => {
-          const formData = new FormData();
-          formData.append("file", file);
+          const formData = new FormData()
+          formData.append('file', file)
 
           uploadImage(formData)
             .then((response) => {
-              console.log("后端返回的原始数据:", response);
-              // 关键点 2: 假设后端返回的数据结构是 { code: 200, data: { url: '...' } }
-              // 这里 resolve 只要返回那个 URL 字符串即可
-              // 直接判断 url 是否存在
-              if (response && response.url) {
-                // 这里的 response 就是你打印出来的那个包含 url 的对象
-                resolve("http://localhost:8081/upload" + response.url);
+              const relativePath = typeof response === 'string' ? response : response?.data || response?.url
+
+              if (relativePath) {
+                resolve(relativePath.startsWith('http') ? relativePath : `${uploadBaseUrl}${relativePath}`)
               } else {
-                reject(new Error("返回结果中没有URL"));
+                reject(new Error('返回结果中没有URL'))
               }
             })
             .catch((err) => {
-              console.error("单个图片上传失败", err);
-              reject(err);
-            });
-        });
+              console.error('单个图片上传失败', err)
+              reject(err)
+            })
+        })
       })
-    );
+    )
 
-    // 关键点 3: res 现在是一个 URL 字符串数组，例如 ["/2025/12/31/xxx.png"]
-    // 这正是编辑器需要的格式
-    callback(res);
+    callback(res)
   } catch (error) {
-    console.error("图片上传过程中出现错误:", error);
-    // 这里可以加一个全局提示，比如 el-message
+    console.error('图片上传过程中出现错误:', error)
+    ElMessage.error('图片上传失败，请重试')
   }
-};
+}
 </script>
 
 <style scoped>

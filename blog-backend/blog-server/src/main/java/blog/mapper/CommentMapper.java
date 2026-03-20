@@ -70,7 +70,12 @@ public interface CommentMapper {
 
     List<CommentVO> getComments(String page, Long blogId, Long parentCommentId);
 
+    List<CommentVO> selectByUserId(@Param("userId") Long userId, @Param("limit") int limit);
+
     List<CommentVO> selectByParentId(Long id);
+
+    @Select("SELECT COUNT(*) FROM comment WHERE user_id = #{userId} AND status = TRUE")
+    Long countByUserId(Long userId);
 
     @Update("update comment set status = #{status} where id= #{id}")
     void updateStatus(Long id, Boolean status);

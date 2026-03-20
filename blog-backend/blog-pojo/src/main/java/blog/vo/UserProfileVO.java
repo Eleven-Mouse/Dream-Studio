@@ -19,6 +19,8 @@ public class UserProfileVO
 
     private String email;
 
+    private String phone;
+
     private String bio;
 
     private String role;

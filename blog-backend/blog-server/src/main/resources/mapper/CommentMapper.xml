@@ -96,6 +96,15 @@
         </where>
         ORDER BY c.create_time ASC
     </select>
+    <select id="selectByUserId" resultMap="CommentVOMap">
+        SELECT c.*, a.title
+        FROM comment c
+        LEFT JOIN article a ON c.blog_id = a.id
+        WHERE c.user_id = #{userId}
+          AND c.status = TRUE
+        ORDER BY c.create_time DESC
+        LIMIT #{limit}
+    </select>
     <select id="selectByParentId" resultType="blog.vo.CommentVO">
         select c.*, a.title
         from comment as c left join article as a on c.blog_id=a.id

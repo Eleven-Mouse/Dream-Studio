@@ -63,8 +63,12 @@ const router = createRouter({
         },
         {
           path: "friendlinks",
-          name: "friendlinks",
-          component: () => import("../views/blog/friendlinks/FriendLinks.vue"),
+          redirect: "/forum",
+        },
+        {
+          path: "forum",
+          name: "forum",
+          component: () => import("../views/blog/forum/ForumEntry.vue"),
         },
         {
           path: "/article/edit/:id?",

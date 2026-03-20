@@ -6,6 +6,33 @@ import "element-plus/dist/index.css";
 import App from "./App.vue";
 import router from "./router";
 
+const consumeAdminBridge = () => {
+  const bridgePrefix = "__dream_admin_bridge__:";
+  const rawValue = window.name || "";
+
+  if (!rawValue.startsWith(bridgePrefix)) {
+    return;
+  }
+
+  try {
+    const payload = JSON.parse(rawValue.slice(bridgePrefix.length));
+
+    if (payload?.accessToken) {
+      localStorage.setItem("accessToken", payload.accessToken);
+    }
+
+    if (payload?.refreshToken) {
+      localStorage.setItem("refreshToken", payload.refreshToken);
+    }
+  } catch (error) {
+    console.error("后台登录桥接失败", error);
+  } finally {
+    window.name = "";
+  }
+};
+
+consumeAdminBridge();
+
 const app = createApp(App);
 
 app.use(createPinia());

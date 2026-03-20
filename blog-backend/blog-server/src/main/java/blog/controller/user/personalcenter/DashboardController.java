@@ -33,13 +33,14 @@ public class DashboardController {
     private CommentService commentService;
 
     @Autowired
-    private FriendLinkService friendLinkService;
-
-    @Autowired
     private MomentService momentService;
 
     @Autowired
     private TagsService tagsService;
+
+    @Autowired
+    private ForumPostService forumPostService;
+
     /**
      * 获取统计数据
      */
@@ -63,12 +64,12 @@ public class DashboardController {
             Long momentCount = momentService.countTotal();
             statistics.put("momentCount", momentCount != null ? momentCount : 0);
 
-            // 友链总数
-            Long friendLinkCount = friendLinkService.countTotal();
-            statistics.put("friendLinkCount", friendLinkCount != null ? friendLinkCount : 0);
+            // 论坛帖子总数
+            Long forumPostCount = forumPostService.countTotal();
+            statistics.put("forumPostCount", forumPostCount != null ? forumPostCount : 0);
 
-            log.info("统计数据：文章={}, 评论={}, 动态={}, 友链={}",
-                    articleCount, commentCount, momentCount, friendLinkCount);
+            log.info("统计数据：文章={}, 评论={}, 动态={}, 论坛帖子={}",
+                    articleCount, commentCount, momentCount, forumPostCount);
 
             return Result.success(statistics);
         } catch (Exception e) {

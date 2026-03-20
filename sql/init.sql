@@ -3,11 +3,8 @@
 -- Host: 127.0.0.1    Database: eleven_blog
 -- ------------------------------------------------------
 -- Server version	8.0.42
-<<<<<<< HEAD
 CREATE DATABASE IF NOT EXISTS eleven_blog DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE eleven_blog;
-=======
->>>>>>> d5a7cbf233b4e1842632f054b48bc235a6356241
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -108,7 +105,7 @@ CREATE TABLE `comment` (
   `Title` varchar(388) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `adminComment` tinyint(1) DEFAULT NULL,
   `parentCommentId` mediumtext COLLATE utf8mb4_unicode_ci,
-  `page` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所在页面：0普通文章，1友链页面',
+  `page` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '所在页面：普通文章、论坛帖子等站内页面',
   PRIMARY KEY (`id`),
   KEY `idx_article_id` (`blog_id`),
   KEY `idx_create_time` (`create_time`)
@@ -122,36 +119,6 @@ CREATE TABLE `comment` (
 LOCK TABLES `comment` WRITE;
 /*!40000 ALTER TABLE `comment` DISABLE KEYS */;
 /*!40000 ALTER TABLE `comment` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `friend_link`
---
-
-DROP TABLE IF EXISTS `friend_link`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `friend_link` (
-  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '友链ID',
-  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '网站名称',
-  `url` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '网站URL',
-  `logo` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '网站头像/Logo',
-  `description` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '网站描述',
-  `status` tinyint DEFAULT '1' COMMENT '状态：0-禁用，1-启用',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  `view_count` int DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='友链表';
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `friend_link`
---
-
-LOCK TABLES `friend_link` WRITE;
-/*!40000 ALTER TABLE `friend_link` DISABLE KEYS */;
-/*!40000 ALTER TABLE `friend_link` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

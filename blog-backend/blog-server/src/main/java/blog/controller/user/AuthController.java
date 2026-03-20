@@ -1,8 +1,10 @@
 package blog.controller.user;
 
 import blog.dto.Login.GithubLoginDTO;
+import blog.dto.Login.GithubRegistrationRequest;
 import blog.dto.Login.LoginRequest;
 import blog.dto.Login.LoginResponse;
+import blog.dto.Login.RefreshTokenRequest;
 import blog.result.Result;
 import blog.service.AuthService;
 import io.swagger.annotations.ApiOperation;
@@ -44,6 +46,20 @@ public class AuthController
     public Result<LoginResponse> githubLogin(@RequestBody GithubLoginDTO request)
     {
         return Result.success(authService.loginByGithub(request));
+    }
+
+    @PostMapping("/github/register")
+    @ApiOperation("通过 GitHub 完成注册")
+    public Result<LoginResponse> registerByGithub(@RequestBody GithubRegistrationRequest request)
+    {
+        return Result.success(authService.registerByGithub(request));
+    }
+
+    @PostMapping("/refresh")
+    @ApiOperation("刷新访问令牌")
+    public Result<LoginResponse> refresh(@RequestBody RefreshTokenRequest request)
+    {
+        return Result.success(authService.refreshToken(request));
     }
 
     @GetMapping("/github/callback")

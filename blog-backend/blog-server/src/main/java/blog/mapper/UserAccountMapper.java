@@ -7,6 +7,8 @@ import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.List;
+
 @Mapper
 public interface UserAccountMapper
 {
@@ -22,11 +24,14 @@ public interface UserAccountMapper
     @Select("SELECT * FROM user_account WHERE github_login = #{githubLogin} LIMIT 1")
     UserAccount selectByGithubLogin(String githubLogin);
 
-    @Insert("INSERT INTO user_account(username, github_id, github_login, nickname, avatar, email, password_hash, bio, role, status, last_login_time, create_time, update_time) " +
-            "VALUES(#{username}, #{githubId}, #{githubLogin}, #{nickname}, #{avatar}, #{email}, #{passwordHash}, #{bio}, #{role}, #{status}, #{lastLoginTime}, #{createTime}, #{updateTime})")
+    @Select("SELECT * FROM user_account WHERE role = #{role} AND status = TRUE")
+    List<UserAccount> selectByRole(String role);
+
+    @Insert("INSERT INTO user_account(username, github_id, github_login, nickname, avatar, email, phone, password_hash, bio, role, status, last_login_time, create_time, update_time) " +
+            "VALUES(#{username}, #{githubId}, #{githubLogin}, #{nickname}, #{avatar}, #{email}, #{phone}, #{passwordHash}, #{bio}, #{role}, #{status}, #{lastLoginTime}, #{createTime}, #{updateTime})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(UserAccount userAccount);
 
-    @Update("UPDATE user_account SET github_id = #{githubId}, github_login = #{githubLogin}, nickname = #{nickname}, avatar = #{avatar}, email = #{email}, password_hash = #{passwordHash}, bio = #{bio}, role = #{role}, status = #{status}, last_login_time = #{lastLoginTime}, update_time = #{updateTime} WHERE id = #{id}")
+    @Update("UPDATE user_account SET username = #{username}, github_id = #{githubId}, github_login = #{githubLogin}, nickname = #{nickname}, avatar = #{avatar}, email = #{email}, phone = #{phone}, password_hash = #{passwordHash}, bio = #{bio}, role = #{role}, status = #{status}, last_login_time = #{lastLoginTime}, update_time = #{updateTime} WHERE id = #{id}")
     void updateById(UserAccount userAccount);
 }

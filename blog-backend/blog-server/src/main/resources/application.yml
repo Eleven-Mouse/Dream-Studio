@@ -56,8 +56,8 @@ blog:
 
 github:
   oauth:
-    client-id: ${GITHUB_OAUTH_CLIENT_ID:}
-    client-secret: ${GITHUB_OAUTH_CLIENT_SECRET:}
+    client-id: ${GITHUB_OAUTH_CLIENT_ID:Ov23lihgPPK0LWvK6UoY}
+    client-secret: ${GITHUB_OAUTH_CLIENT_SECRET:5520122d774eba2a14432698149c437fea88db29}
     redirect-uri: ${GITHUB_OAUTH_REDIRECT_URI:http://localhost:3000/login}
 
 management:

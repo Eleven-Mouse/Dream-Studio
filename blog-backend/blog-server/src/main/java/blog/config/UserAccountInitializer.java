@@ -35,6 +35,7 @@ public class UserAccountInitializer implements CommandLineRunner
                       nickname VARCHAR(100) NOT NULL COMMENT '昵称',
                       avatar VARCHAR(500) DEFAULT NULL COMMENT '头像地址',
                       email VARCHAR(255) DEFAULT NULL COMMENT '邮箱',
+                      phone VARCHAR(30) DEFAULT NULL COMMENT '手机号',
                       password_hash VARCHAR(255) DEFAULT NULL COMMENT '站内密码哈希',
                       bio VARCHAR(500) DEFAULT NULL COMMENT '简介',
                       role VARCHAR(30) NOT NULL DEFAULT 'USER' COMMENT '角色',
@@ -72,9 +73,50 @@ public class UserAccountInitializer implements CommandLineRunner
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='论坛帖子表'
                     """);
 
+            jdbcTemplate.execute("""
+                    CREATE TABLE IF NOT EXISTS forum_report (
+                      id BIGINT NOT NULL AUTO_INCREMENT COMMENT '举报ID',
+                      reporter_id BIGINT NOT NULL COMMENT '举报人用户ID',
+                      target_type VARCHAR(50) NOT NULL COMMENT '举报目标类型',
+                      target_id BIGINT NOT NULL COMMENT '举报目标ID',
+                      target_title VARCHAR(255) NOT NULL COMMENT '举报目标标题',
+                      reason VARCHAR(50) NOT NULL COMMENT '举报原因',
+                      detail VARCHAR(500) DEFAULT NULL COMMENT '补充说明',
+                      status VARCHAR(30) NOT NULL DEFAULT 'PENDING' COMMENT '处理状态',
+                      reviewer_id BIGINT DEFAULT NULL COMMENT '处理人用户ID',
+                      reviewer_note VARCHAR(500) DEFAULT NULL COMMENT '处理备注',
+                      create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                      update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                      PRIMARY KEY (id),
+                      KEY idx_forum_report_reporter (reporter_id),
+                      KEY idx_forum_report_status (status),
+                      KEY idx_forum_report_target (target_type, target_id)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='论坛举报表'
+                    """);
+
+            jdbcTemplate.execute("""
+                    CREATE TABLE IF NOT EXISTS user_notification (
+                      id BIGINT NOT NULL AUTO_INCREMENT COMMENT '通知ID',
+                      user_id BIGINT NOT NULL COMMENT '接收人用户ID',
+                      type VARCHAR(50) NOT NULL COMMENT '通知类型',
+                      title VARCHAR(255) NOT NULL COMMENT '通知标题',
+                      content VARCHAR(500) NOT NULL COMMENT '通知内容',
+                      target_type VARCHAR(50) DEFAULT NULL COMMENT '关联目标类型',
+                      target_id BIGINT DEFAULT NULL COMMENT '关联目标ID',
+                      related_report_id BIGINT DEFAULT NULL COMMENT '关联举报ID',
+                      is_read TINYINT(1) NOT NULL DEFAULT '0' COMMENT '是否已读',
+                      create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                      read_time DATETIME DEFAULT NULL COMMENT '已读时间',
+                      PRIMARY KEY (id),
+                      KEY idx_user_notification_user (user_id),
+                      KEY idx_user_notification_read (user_id, is_read)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户通知表'
+                    """);
+
             ensureColumnExists("article", "author_id", "ALTER TABLE article ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
             ensureColumnExists("forum_post", "author_id", "ALTER TABLE forum_post ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
             ensureColumnExists("comment", "user_id", "ALTER TABLE comment ADD COLUMN user_id BIGINT DEFAULT NULL COMMENT '评论用户ID' AFTER id");
+            ensureColumnExists("user_account", "phone", "ALTER TABLE user_account ADD COLUMN phone VARCHAR(30) DEFAULT NULL COMMENT '手机号' AFTER email");
 
             userAccountService.ensureAdminAccount();
             Long adminId = userAccountService.ensureDefaultAdminAndGetId();

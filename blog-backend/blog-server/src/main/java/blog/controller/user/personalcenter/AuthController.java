@@ -2,6 +2,8 @@ package blog.controller.user.personalcenter;
 
 import blog.dto.Login.LoginRequest;
 import blog.dto.Login.LoginResponse;
+import blog.dto.Login.RefreshTokenRequest;
+import blog.result.Result;
 import blog.service.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,12 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request) {
-        return authService.login(request);
+    public Result<LoginResponse> login(@RequestBody LoginRequest request) {
+        return Result.success(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public Result<LoginResponse> refresh(@RequestBody RefreshTokenRequest request) {
+        return Result.success(authService.refreshToken(request));
     }
 }

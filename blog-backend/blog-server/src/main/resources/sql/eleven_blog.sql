@@ -66,21 +66,6 @@ create index idx_article_id
 create index idx_create_time
     on comment (create_time);
 
-create table friend_link
-(
-    id          bigint auto_increment comment '友链ID'
-        primary key,
-    name        varchar(100)                       not null comment '网站名称',
-    url         varchar(255)                       not null comment '网站URL',
-    logo        varchar(1000)                      null comment '网站头像/Logo',
-    description varchar(200)                       null comment '网站描述',
-    status      tinyint  default 1                 null comment '状态：0-禁用，1-启用',
-    create_time datetime default CURRENT_TIMESTAMP null comment '创建时间',
-    update_time datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
-    view_count  int                                null
-)
-    comment '友链表';
-
 create table moment
 (
     id           bigint auto_increment comment '动态ID'

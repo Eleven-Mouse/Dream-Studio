@@ -25,6 +25,8 @@ public class UserAccount
 
     private String email;
 
+    private String phone;
+
     private String passwordHash;
 
     private String bio;

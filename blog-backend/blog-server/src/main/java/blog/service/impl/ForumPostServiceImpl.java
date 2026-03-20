@@ -167,6 +167,12 @@ public class ForumPostServiceImpl implements ForumPostService
         forumPostMapper.updateLastActivityTime(postId, LocalDateTime.now());
     }
 
+    @Override
+    public Long countTotal()
+    {
+        return forumPostMapper.countAll();
+    }
+
     private String normalizeSort(String sort)
     {
         if (!StringUtils.hasText(sort)) {

@@ -7,7 +7,8 @@ import request from "@/utils/request";
  */
 export function uploadImage(formData) {
   return request({
-    url: "/upload/images",
+    baseURL: '',
+    url: "/admin/upload/images",
     method: "post",
     data: formData,
     headers: {
@@ -15,4 +16,3 @@ export function uploadImage(formData) {
     },
   });
 }
-

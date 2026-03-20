@@ -22,7 +22,7 @@
         </template>
         <div v-else class="login-required-panel">
           <p>登录后才能发表评论或回复，并自动使用你的头像与昵称。</p>
-          <el-button type="primary" @click="router.push('/login')">去登录</el-button>
+          <el-button type="primary" @click="router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })">去登录</el-button>
         </div>
       </div>
 
@@ -90,7 +90,6 @@ import { ref, onMounted, defineProps, reactive, onBeforeMount, computed, watch }
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { fetchComments, createComment, deleteComment } from '@/api/comment.js'
-import { saveCommunityComment } from '@/utils/community'
 import { useUserStore } from '@/store/user'
 import CommentNode from './CommentNode.vue'
 import defaultAvatar from '../assets/(5).png'
@@ -112,10 +111,10 @@ const totalComments = ref(0)
 const comments = ref([])
 const commentForm = reactive({
   content: '',
-  nickname: localStorage.getItem('comment_nickname') || '',
-  email: localStorage.getItem('comment_email') || '',
-  website: localStorage.getItem('comment_website') || '',
-  avatar: localStorage.getItem('comment_avatar') || '',
+  nickname: '',
+  email: '',
+  website: '',
+  avatar: '',
   page: '',
   blogId: 0,
 })
@@ -194,7 +193,7 @@ const getComments = async () => {
 const submitComment = async (commentData) => {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录后再评论')
-    router.push('/login')
+    router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
     return
   }
   if (!commentForm.nickname.trim()) return alert('昵称不能为空！')
@@ -203,32 +202,10 @@ const submitComment = async (commentData) => {
   try {
     await createComment(commentData)
 
-    localStorage.setItem('comment_nickname', commentForm.nickname)
-    localStorage.setItem('comment_email', commentForm.email)
-    localStorage.setItem('comment_website', commentForm.website)
-    localStorage.setItem('comment_avatar', commentForm.avatar)
-    commentForm.page = props.page
-    clearForm.blogId = props.blogId
-    saveCommunityComment({
-      nickname: commentForm.nickname,
-      email: commentForm.email,
-      avatar: commentForm.avatar,
-      content: commentData.content,
-      page: commentData.page || '',
-      blogId: commentData.blogId || null,
-      parentCommentId: commentData.parentCommentId || null,
-      createTime: new Date().toISOString(),
-    })
-    localStorage.setItem(
-      'profile_forum_comment_count',
-      String((Number(localStorage.getItem('profile_forum_comment_count')) || 0) + 1),
-    )
-
-    alert('评论成功！')
+    ElMessage.success('评论成功')
     resetAndReload()
-    clearForm()
   } catch (err) {
-    alert(err.message || '评论失败，请稍后重试。')
+    ElMessage.error(err.message || '评论失败，请稍后重试。')
     console.error(err)
   }
 }
@@ -241,7 +218,7 @@ const submitRootComment = () => {
 const handleShowReply = (comment) => {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录后再回复')
-    router.push('/login')
+    router.push({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
     return
   }
   replyingToId.value = comment.id

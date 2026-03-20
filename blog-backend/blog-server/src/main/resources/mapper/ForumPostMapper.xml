@@ -87,6 +87,13 @@
         WHERE fp.id = #{id}
     </select>
 
+    <select id="selectByAuthorId" resultType="blog.vo.ForumPostVO">
+        <include refid="ForumPostSelectColumns"/>
+        WHERE fp.author_id = #{authorId}
+        ORDER BY fp.is_pinned DESC, lastActivityTime DESC, fp.create_time DESC
+        LIMIT #{limit}
+    </select>
+
     <update id="updateMeta" parameterType="blog.entity.ForumPost">
         UPDATE forum_post
         <set>

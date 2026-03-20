@@ -22,3 +22,11 @@ export function githubCodeLogin(data) {
     data,
   })
 }
+
+export function completeGithubRegistration(data) {
+  return request({
+    url: '/auth/github/register',
+    method: 'post',
+    data,
+  })
+}

@@ -59,7 +59,7 @@
             user_account ua ON a.author_id = ua.id
         WHERE
             a.category_id = #{categoryId}
-            AND status = 1
+            AND a.status = 1
         ORDER BY
             COALESCE(a.publish_time, a.create_time) DESC
     </select>
@@ -79,7 +79,7 @@
             user_account ua ON a.author_id = ua.id
         WHERE
             FIND_IN_SET(#{tagId}, a.tags)
-            AND status = 1
+            AND a.status = 1
         ORDER BY
             COALESCE(a.publish_time, a.create_time) DESC
     </select>

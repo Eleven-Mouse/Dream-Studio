@@ -1,13 +1,18 @@
 package blog.service.impl;
 
+import blog.dto.Login.GithubRegistrationRequest;
+import blog.dto.Login.GithubRegistrationSession;
 import blog.config.GithubOauthProperties;
 import blog.dto.Login.GithubLoginDTO;
 import blog.dto.Login.GithubOAuthUserDTO;
 import blog.dto.Login.LoginRequest;
 import blog.dto.Login.LoginResponse;
+import blog.dto.Login.RefreshTokenRequest;
 import blog.service.AuthService;
 import blog.service.UserAccountService;
 import blog.utils.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import blog.vo.UserProfileVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -17,6 +22,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -46,7 +52,10 @@ public class AuthServiceImpl implements AuthService
     private static final String GITHUB_USER_URL = "https://api.github.com/user";
     private static final String GITHUB_USER_EMAILS_URL = "https://api.github.com/user/emails";
     private static final String GITHUB_STATE_PREFIX = "github:oauth:state:";
+    private static final String GITHUB_REGISTRATION_PREFIX = "github:oauth:register:";
     private static final Map<String, Instant> LOCAL_GITHUB_STATE_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, GithubRegistrationSession> LOCAL_GITHUB_REGISTRATION_CACHE = new ConcurrentHashMap<>();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -102,7 +111,8 @@ public class AuthServiceImpl implements AuthService
                 .queryParam("redirect_uri", githubOauthProperties.getRedirectUri())
                 .queryParam("scope", "read:user user:email")
                 .queryParam("state", state)
-                .build(true)
+                .build()
+                .encode()
                 .toUriString();
 
         Map<String, String> result = new HashMap<>();
@@ -122,13 +132,130 @@ public class AuthServiceImpl implements AuthService
 
         String githubAccessToken = exchangeGithubAccessToken(request.getCode());
         GithubOAuthUserDTO githubUser = fetchGithubUser(githubAccessToken);
-        var userAccount = userAccountService.saveOrUpdateGithubUser(githubUser);
+        var existingUser = userAccountService.findByGithubIdentity(githubUser.getGithubId(), githubUser.getGithubLogin());
 
-        List<String> roles = List.of("ROLE_" + Objects.requireNonNullElse(userAccount.getRole(), "USER").toUpperCase());
-        String accessToken = jwtUtil.createAccessToken(userAccount.getUsername(), roles);
-        String refreshToken = jwtUtil.createRefreshToken(userAccount.getUsername());
-        boolean needsPasswordSetup = !StringUtils.hasText(userAccount.getPasswordHash());
-        return new LoginResponse(accessToken, refreshToken, userAccount.getUsername(), needsPasswordSetup);
+        if (existingUser == null || !StringUtils.hasText(existingUser.getPasswordHash())) {
+            return buildPendingGithubRegistration(existingUser, githubUser);
+        }
+
+        var userAccount = userAccountService.saveOrUpdateGithubUser(githubUser);
+        return buildAuthenticatedResponse(userAccount.getUsername(), userAccount.getRole(), false);
+    }
+
+    @Override
+    public LoginResponse registerByGithub(GithubRegistrationRequest request)
+    {
+        if (request == null || !StringUtils.hasText(request.getRegistrationToken())) {
+            throw new IllegalArgumentException("注册令牌不能为空，请重新发起 GitHub 授权");
+        }
+
+        GithubRegistrationSession registrationSession = readGithubRegistrationSession(request.getRegistrationToken());
+        if (registrationSession == null) {
+            throw new IllegalArgumentException("GitHub 注册会话已失效，请重新发起授权");
+        }
+
+        var userAccount = userAccountService.completeGithubRegistration(
+                registrationSession,
+                request.getUsername(),
+                request.getPhone(),
+                request.getPassword()
+        );
+        clearGithubRegistrationSession(request.getRegistrationToken());
+
+        return buildAuthenticatedResponse(userAccount.getUsername(), userAccount.getRole(), false);
+    }
+
+    private LoginResponse buildPendingGithubRegistration(blog.entity.UserAccount existingUser,
+                                                         GithubOAuthUserDTO githubUser)
+    {
+        String suggestedUsername = existingUser != null && StringUtils.hasText(existingUser.getUsername())
+                ? existingUser.getUsername()
+                : generateSuggestedUsername(githubUser.getGithubLogin(), githubUser.getGithubId());
+
+        GithubRegistrationSession registrationSession = new GithubRegistrationSession(
+                existingUser != null ? existingUser.getId() : null,
+                githubUser.getGithubId(),
+                githubUser.getGithubLogin(),
+                firstNonBlank(githubUser.getNickname(), existingUser != null ? existingUser.getNickname() : null),
+                firstNonBlank(githubUser.getAvatar(), existingUser != null ? existingUser.getAvatar() : null),
+                firstNonBlank(githubUser.getEmail(), existingUser != null ? existingUser.getEmail() : null),
+                existingUser != null ? existingUser.getPhone() : null,
+                firstNonBlank(githubUser.getBio(), existingUser != null ? existingUser.getBio() : null),
+                suggestedUsername
+        );
+        String registrationToken = storeGithubRegistrationSession(registrationSession);
+
+        return LoginResponse.githubRegistrationPending(
+                registrationToken,
+                suggestedUsername,
+                registrationSession.getGithubLogin(),
+                registrationSession.getNickname(),
+                registrationSession.getAvatar(),
+                registrationSession.getEmail(),
+                registrationSession.getPhone()
+        );
+    }
+
+    private LoginResponse buildAuthenticatedResponse(String username, String role, boolean needsPasswordSetup)
+    {
+        List<String> roles = List.of("ROLE_" + Objects.requireNonNullElse(role, "USER").toUpperCase());
+        String accessToken = jwtUtil.createAccessToken(username, roles);
+        String refreshToken = jwtUtil.createRefreshToken(username);
+        return new LoginResponse(accessToken, refreshToken, username, needsPasswordSetup);
+    }
+
+    private String generateSuggestedUsername(String githubLogin, Long githubId)
+    {
+        String base = StringUtils.hasText(githubLogin) ? githubLogin.trim() : "github_user";
+        String sanitized = base.replaceAll("[^A-Za-z0-9_-]", "_");
+        if (!StringUtils.hasText(sanitized)) {
+            sanitized = "github_user";
+        }
+        if (sanitized.length() > 30) {
+            sanitized = sanitized.substring(0, 30);
+        }
+        if (sanitized.length() < 3 && githubId != null) {
+            sanitized = (sanitized + "_" + githubId).substring(0, Math.min(30, (sanitized + "_" + githubId).length()));
+        }
+        return sanitized;
+    }
+
+    @Override
+    public LoginResponse refreshToken(RefreshTokenRequest request)
+    {
+        if (request == null || !StringUtils.hasText(request.getRefreshToken())) {
+            throw new BadCredentialsException("刷新令牌不能为空");
+        }
+
+        String username;
+        try {
+            var claims = jwtUtil.parseToken(request.getRefreshToken());
+            String tokenType = claims.get("tokenType", String.class);
+            if (StringUtils.hasText(tokenType) && !"REFRESH".equalsIgnoreCase(tokenType)) {
+                throw new BadCredentialsException("刷新令牌类型无效");
+            }
+            username = claims.getSubject();
+        } catch (BadCredentialsException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new BadCredentialsException("刷新令牌已失效，请重新登录", e);
+        }
+
+        if (!StringUtils.hasText(username)) {
+            throw new BadCredentialsException("刷新令牌无效，请重新登录");
+        }
+
+        UserProfileVO profile = userAccountService.getProfileByUsername(username);
+        if (profile == null) {
+            throw new BadCredentialsException("用户不存在或已失效，请重新登录");
+        }
+
+        String role = StringUtils.hasText(profile.getRole()) ? profile.getRole().toUpperCase() : "USER";
+        List<String> roles = List.of("ROLE_" + role);
+        String accessToken = jwtUtil.createAccessToken(username, roles);
+        String refreshToken = jwtUtil.createRefreshToken(username);
+        boolean needsPasswordSetup = !Boolean.TRUE.equals(profile.getPasswordInitialized());
+        return new LoginResponse(accessToken, refreshToken, username, needsPasswordSetup);
     }
 
     private void ensureGithubConfigured()
@@ -259,6 +386,42 @@ public class AuthServiceImpl implements AuthService
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.add("X-GitHub-Api-Version", "2022-11-28");
         return headers;
+    }
+
+    private String storeGithubRegistrationSession(GithubRegistrationSession registrationSession)
+    {
+        String registrationToken = UUID.randomUUID().toString().replace("-", "");
+        try {
+            String payload = OBJECT_MAPPER.writeValueAsString(registrationSession);
+            redisTemplate.opsForValue().set(GITHUB_REGISTRATION_PREFIX + registrationToken, payload, Duration.ofMinutes(10));
+        } catch (Exception e) {
+            LOCAL_GITHUB_REGISTRATION_CACHE.put(registrationToken, registrationSession);
+        }
+        return registrationToken;
+    }
+
+    private GithubRegistrationSession readGithubRegistrationSession(String registrationToken)
+    {
+        try {
+            String payload = redisTemplate.opsForValue().get(GITHUB_REGISTRATION_PREFIX + registrationToken);
+            if (StringUtils.hasText(payload)) {
+                return OBJECT_MAPPER.readValue(payload, GithubRegistrationSession.class);
+            }
+        } catch (Exception e) {
+            // ignore and fallback to local cache
+        }
+
+        return LOCAL_GITHUB_REGISTRATION_CACHE.get(registrationToken);
+    }
+
+    private void clearGithubRegistrationSession(String registrationToken)
+    {
+        try {
+            redisTemplate.delete(GITHUB_REGISTRATION_PREFIX + registrationToken);
+        } catch (Exception e) {
+            // ignore and cleanup local cache
+        }
+        LOCAL_GITHUB_REGISTRATION_CACHE.remove(registrationToken);
     }
 
     private String firstNonBlank(String first, String second)

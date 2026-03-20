@@ -30,4 +30,29 @@ export function fetchArticleById(id) {
   })
 }
 
+export function createArticle(data) {
+  return request({
+    baseURL: '',
+    url: '/admin/articles',
+    method: 'post',
+    data,
+  })
+}
+
+export function updateArticle(id, data) {
+  return request({
+    baseURL: '',
+    url: `/admin/articles/${id}`,
+    method: 'put',
+    data,
+  })
+}
+
+export function getArticleById(id) {
+  return request({
+    baseURL: '',
+    url: `/admin/articles/${id}`,
+    method: 'get',
+  })
+}
 

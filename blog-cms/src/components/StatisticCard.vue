@@ -40,14 +40,14 @@ import {
   Document,
   ChatLineRound,
   Picture,
-  Link,
+  ChatDotRound,
 } from "@element-plus/icons-vue"; 
 import { getStatistics } from "@/api/dashboard";
 const rawData = ref({
   articleCount: 0,
   commentCount: 0,
   momentCount: 0,
-  friendLinkCount: 0,
+  forumPostCount: 0,
 });
 const loading = ref(false);
 
@@ -76,9 +76,9 @@ const statCards = computed(() => [
     bgColor: "#fdf6ec",
   },
   {
-    label: "友链总数",
-    value: rawData.value.friendLinkCount,
-    icon: Link,
+    label: "论坛帖子数",
+    value: rawData.value.forumPostCount,
+    icon: ChatDotRound,
     iconColor: "#909399", // 灰色
     bgColor: "#f4f4f5",
   },

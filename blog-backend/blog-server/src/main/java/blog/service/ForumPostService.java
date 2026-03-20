@@ -24,4 +24,6 @@ public interface ForumPostService
     void deletePost(Long id);
 
     void touchLastActivityByPage(String page);
+
+    Long countTotal();
 }

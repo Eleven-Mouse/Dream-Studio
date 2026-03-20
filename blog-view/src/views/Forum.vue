@@ -28,7 +28,7 @@
           <div class="composer-header">
             <div>
               <div class="channel-kicker">Dream Studio Forum</div>
-              <h1>发布帖子内容</h1>
+              <h1>发布帖子</h1>
             </div>
           </div>
 
@@ -184,7 +184,6 @@ import { useUserStore } from '@/store/user'
 import ForumPostCard from '@/components/ForumPostCard.vue'
 import defaultAvatar from '@/assets/(5).png'
 import { createForumPost, fetchForumPosts } from '@/api/forum'
-import { saveCommunityForumPost } from '@/utils/community'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -311,20 +310,6 @@ const submitPost = async () => {
   try {
     syncFormUser()
     const createdPost = await createForumPost({ ...form })
-    saveCommunityForumPost({
-      id: createdPost.id,
-      title: createdPost.title,
-      summary: createdPost.summary,
-      nickname: createdPost.nickname,
-      createTime: createdPost.createTime || new Date().toISOString(),
-      commentCount: createdPost.commentCount || 0,
-      viewCount: createdPost.viewCount || 0,
-    })
-    localStorage.setItem(
-      'profile_forum_post_count',
-      String((Number(localStorage.getItem('profile_forum_post_count')) || 0) + 1),
-    )
-
     form.title = ''
     form.summary = ''
     form.content = ''
@@ -354,7 +339,7 @@ onMounted(() => {
   --forum-right-width: 280px;
   --forum-gap: 18px;
   --forum-top-offset: 60px;
-  --forum-primary-height: 620px;
+  --forum-primary-height: 300px;
 }
 
 .forum-shell {
@@ -483,7 +468,6 @@ onMounted(() => {
 .side-panel-scroll {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
 }
 
 .side-inner-card {

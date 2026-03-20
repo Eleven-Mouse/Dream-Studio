@@ -1,6 +1,17 @@
 import defaultAvatar from '@/assets/(5).png'
 
-const USER_PROFILE_KEYS = ['user_id', 'user_nickname', 'user_avatar', 'user_email', 'user_role', 'user_bio', 'user_username']
+const USER_PROFILE_KEYS = [
+  'user_id',
+  'user_nickname',
+  'user_avatar',
+  'user_email',
+  'user_phone',
+  'user_role',
+  'user_bio',
+  'user_username',
+  'user_github_login',
+  'user_password_initialized',
+]
 
 const ACCOUNT_PRESETS = {
   admin: {
@@ -58,7 +69,10 @@ export const resolveCurrentUserProfile = (accessToken = '') => {
     const nickname = localStorage.getItem('user_nickname') || preset.nickname || username
     const avatar = localStorage.getItem('user_avatar') || defaultAvatar
     const email = localStorage.getItem('user_email') || ''
+    const phone = localStorage.getItem('user_phone') || ''
     const role = (localStorage.getItem('user_role') || roleFromToken || '').toUpperCase()
+    const githubLogin = localStorage.getItem('user_github_login') || ''
+    const passwordInitialized = localStorage.getItem('user_password_initialized') === 'true'
     const bio =
       localStorage.getItem('user_bio') ||
       preset.bio ||
@@ -70,8 +84,11 @@ export const resolveCurrentUserProfile = (accessToken = '') => {
       nickname,
       avatar,
       email,
+      phone,
       role,
       bio,
+      githubLogin,
+      passwordInitialized,
       isLoggedIn: true,
     }
   }
@@ -79,11 +96,14 @@ export const resolveCurrentUserProfile = (accessToken = '') => {
   return {
     id: null,
     username: '',
-    nickname: localStorage.getItem('forum_post_nickname') || '游客',
-    avatar: localStorage.getItem('forum_post_avatar') || defaultAvatar,
-    email: localStorage.getItem('forum_post_email') || '',
+    nickname: '游客',
+    avatar: defaultAvatar,
+    email: '',
+    phone: '',
     role: '',
-    bio: localStorage.getItem('user_bio') || '游客模式 · 登录后可同步个人资料',
+    bio: '游客模式 · 登录后可同步个人资料',
+    githubLogin: '',
+    passwordInitialized: false,
     isLoggedIn: false,
   }
 }
@@ -100,6 +120,11 @@ export const syncUserProfileFromToken = (accessToken, fallbackUsername = '') => 
   localStorage.setItem('user_nickname', nickname)
   localStorage.setItem('user_role', role)
   localStorage.setItem('user_bio', bio)
+  localStorage.setItem('user_github_login', '')
+  localStorage.setItem('user_password_initialized', 'false')
+  if (!localStorage.getItem('user_phone')) {
+    localStorage.setItem('user_phone', '')
+  }
 
   if (!localStorage.getItem('user_avatar')) {
     localStorage.setItem('user_avatar', defaultAvatar)
@@ -114,8 +139,13 @@ export const syncUserProfileFromServerProfile = (profile = {}) => {
   if (profile.nickname !== undefined) localStorage.setItem('user_nickname', profile.nickname || '')
   if (profile.avatar !== undefined) localStorage.setItem('user_avatar', profile.avatar || defaultAvatar)
   if (profile.email !== undefined) localStorage.setItem('user_email', profile.email || '')
+  if (profile.phone !== undefined) localStorage.setItem('user_phone', profile.phone || '')
   if (profile.role !== undefined) localStorage.setItem('user_role', profile.role || '')
   if (profile.bio !== undefined) localStorage.setItem('user_bio', profile.bio || '')
+  if (profile.githubLogin !== undefined) localStorage.setItem('user_github_login', profile.githubLogin || '')
+  if (profile.passwordInitialized !== undefined) {
+    localStorage.setItem('user_password_initialized', profile.passwordInitialized ? 'true' : 'false')
+  }
   return resolveCurrentUserProfile(localStorage.getItem('accessToken') || '')
 }
 

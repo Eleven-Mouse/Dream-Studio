@@ -29,6 +29,8 @@ public interface ForumPostMapper
 
     ForumPostVO selectById(Long id);
 
+    List<ForumPostVO> selectByAuthorId(@Param("authorId") Long authorId, @Param("limit") int limit);
+
     void updateMeta(ForumPost forumPost);
 
     @Insert("INSERT INTO forum_post(author_id, title, summary, content, nickname, email, avatar, view_count, is_pinned, is_featured, create_time, update_time, last_activity_time) " +
@@ -53,4 +55,7 @@ public interface ForumPostMapper
 
     @Select("SELECT COUNT(*) FROM forum_post WHERE is_featured = TRUE")
     Long countFeatured();
+
+    @Select("SELECT COUNT(*) FROM forum_post WHERE author_id = #{authorId}")
+    Long countByAuthorId(Long authorId);
 }

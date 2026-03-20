@@ -24,4 +24,11 @@ export function fetchArticlesByTagId(id, params) {
   });
 }
 
+export function getAllTags() {
+  return request({
+    baseURL: '',
+    url: '/admin/tags/list',
+    method: 'get',
+  })
+}
 

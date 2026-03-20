@@ -1,8 +1,8 @@
 <template>
-  <div class="header-wrapper">
+  <div class="header-wrapper" :class="{ 'is-hidden': isHeaderHidden }">
     <div class="header-container">
       <div class="logo">
-        <a href="/home">Eleven-Mouse </a>
+        <a href="/home">Dream-studio </a>
       </div>
       <div class="search-bar">
         <el-autocomplete
@@ -46,20 +46,20 @@
         <el-menu-item index="/moment"
           ><el-icon><Comment /></el-icon>Moment</el-menu-item
         >
+
+        <el-menu-item index="/forum"
+          ><el-icon><ChatDotRound /></el-icon>Forum</el-menu-item
+        >
         <el-menu-item index="/archive"
           ><el-icon><WalletFilled /></el-icon>Archive</el-menu-item
         >
         <el-menu-item index="/about"
           ><el-icon><UserFilled /></el-icon>About</el-menu-item
         >
-
-        <el-menu-item index="/friendlinks"
-          ><el-icon><Link /></el-icon>Links</el-menu-item
-        >
       </el-menu>
       <div class="github-link">
-        <a href="https://github.com" target="_blank">
-          <span>GitHub</span> <el-icon size="20"><Promotion /></el-icon>
+        <a href="https://github.com/Eleven-Mouse/Dream-Studio" target="_blank">
+          <span>GitHub</span> <el-icon size="15"><Promotion /></el-icon>
         </a>
       </div>
       <div class="user-entry" @click="goToProfile">
@@ -69,9 +69,12 @@
         <el-avatar v-else :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
         <div class="user-meta">
           <span class="user-name">{{ displayName }}</span>
-          <small>{{ isLoggedIn ? '个人中心' : '游客模式' }}</small>
+          <small>{{ isAdmin ? '后台管理' : isLoggedIn ? '个人中心' : '游客模式' }}</small>
         </div>
       </div>
+      <el-button v-if="isLoggedIn" text class="logout-button" @click.stop="handleLogout"
+        >退出登录</el-button
+      >
       <theme-switcher class="theme-switch" />
     </div>
     <!-- 页面滚动进度条 -->
@@ -90,10 +93,11 @@ import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCategories } from '@/api/categories'
 import { fetchArticles } from '@/api/article.js'
+import { useAuthStore } from '@/store/auth'
 import { useUserStore } from '@/store/user'
+import { openAdminApp } from '@/utils/adminBridge'
 import {
   Search,
-  Link,
   HomeFilled,
   Grid,
   UserFilled,
@@ -104,9 +108,9 @@ import {
 } from '@element-plus/icons-vue'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
-
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const userStore = useUserStore()
 const activeIndex = ref('/home')
 const searchInput = ref('')
@@ -114,6 +118,10 @@ const categories = ref([])
 const searchLoading = ref(false)
 const currentCategoryId = ref(null)
 const scrollProgress = ref(0)
+const isHeaderHidden = ref(false)
+
+const HEADER_HIDE_THRESHOLD = 90
+const HEADER_DIRECTION_THRESHOLD = 6
 
 const currentProfile = computed(() => userStore.profile)
 const isLoggedIn = computed(() => userStore.isLoggedIn)
@@ -160,7 +168,32 @@ watch(
   { immediate: true },
 )
 
-const calculateScrollProgress = (e) => {
+let scrollContainer = null
+
+const showHeader = () => {
+  isHeaderHidden.value = false
+}
+
+const updateHeaderVisibility = (scrollTop) => {
+  const previousScrollTop = scrollContainer?.dataset.lastScrollTop
+    ? Number(scrollContainer.dataset.lastScrollTop)
+    : 0
+  const delta = scrollTop - previousScrollTop
+
+  if (scrollTop <= HEADER_HIDE_THRESHOLD) {
+    showHeader()
+  } else if (delta > HEADER_DIRECTION_THRESHOLD) {
+    isHeaderHidden.value = true
+  } else if (delta < -HEADER_DIRECTION_THRESHOLD) {
+    showHeader()
+  }
+
+  if (scrollContainer) {
+    scrollContainer.dataset.lastScrollTop = String(scrollTop)
+  }
+}
+
+const handleMainScroll = (e) => {
   // 注意：这里我们通过 e.target 获取滚动的元素
   const target = e.target
   if (!target) return
@@ -173,9 +206,8 @@ const calculateScrollProgress = (e) => {
   const progress = scrollableHeight > 0 ? (scrollTop / scrollableHeight) * 100 : 0
 
   scrollProgress.value = Math.min(Math.max(progress, 0), 100)
+  updateHeaderVisibility(scrollTop)
 }
-
-let scrollContainer = null
 
 onMounted(() => {
   loadCategories()
@@ -185,7 +217,8 @@ onMounted(() => {
 
   // 2. 如果找到了，就手动添加原生事件监听
   if (scrollContainer) {
-    scrollContainer.addEventListener('scroll', calculateScrollProgress)
+    scrollContainer.dataset.lastScrollTop = String(scrollContainer.scrollTop)
+    scrollContainer.addEventListener('scroll', handleMainScroll)
   } else {
     console.warn('未找到滚动容器 .main-scroll-container')
   }
@@ -194,9 +227,19 @@ onMounted(() => {
 onUnmounted(() => {
   // 3. 组件销毁时，记得移除监听，防止内存泄漏
   if (scrollContainer) {
-    scrollContainer.removeEventListener('scroll', calculateScrollProgress)
+    scrollContainer.removeEventListener('scroll', handleMainScroll)
   }
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    showHeader()
+    if (scrollContainer) {
+      scrollContainer.dataset.lastScrollTop = String(scrollContainer.scrollTop)
+    }
+  },
+)
 
 // 自动补全：根据输入关键字异步获取文章标题列表
 const querySearchArticles = async (queryString, cb) => {
@@ -232,7 +275,20 @@ const handleSelectArticle = (item) => {
 }
 
 const goToProfile = () => {
+  if (isAdmin.value) {
+    openAdminApp({
+      isAdmin: true,
+      accessToken: authStore.accessToken,
+      router,
+    })
+    return
+  }
+
   router.push('/profile')
+}
+
+const handleLogout = async () => {
+  authStore.logout()
 }
 </script>
 
@@ -241,6 +297,14 @@ const goToProfile = () => {
   position: relative;
   display: flex;
   align-items: center;
+  min-height: 58px;
+  padding: 0 22px;
+  border: 1px solid var(--header-glass-border, rgba(255, 255, 255, 0.66));
+  border-radius: 22px;
+  background: var(--header-glass-bg, rgba(255, 255, 255, 0.56));
+  box-shadow: var(--header-glass-shadow);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
 /* 针对输入框的焦点状态 */
 .search-bar ::v-deep(.el-input__wrapper.is-focus) {
@@ -262,9 +326,9 @@ const goToProfile = () => {
 }
 
 .search-bar .el-input {
-  --el-input-bg-color: var(--card-bg-color);
+  --el-input-bg-color: rgba(255, 255, 255, 0.44);
   --el-input-text-color: var(--app-text-color);
-  --el-input-border-color: var(--card-border-color);
+  --el-input-border-color: rgba(148, 163, 184, 0.18);
 }
 
 .nav-menu {
@@ -273,11 +337,17 @@ const goToProfile = () => {
 
 .nav-menu .el-menu-item:hover,
 .nav-menu .el-sub-menu__title:hover {
-  background-color: rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.34) !important;
 }
 /* 带有子菜单的标题悬停 */
 :deep(.el-sub-menu__title:hover) {
-  background-color: rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.34) !important;
+}
+
+:deep(.el-menu--horizontal > .el-menu-item.is-active),
+:deep(.el-menu--horizontal > .el-sub-menu.is-active .el-sub-menu__title) {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-bottom-color: rgba(109, 160, 81, 0.45) !important;
 }
 .github-link {
   margin-left: auto;
@@ -302,6 +372,10 @@ const goToProfile = () => {
   margin-left: 16px;
 }
 
+.logout-button {
+  margin-left: 10px;
+}
+
 .user-entry {
   display: flex;
   align-items: center;
@@ -314,7 +388,7 @@ const goToProfile = () => {
 }
 
 .user-entry:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.34);
 }
 
 .user-meta {
@@ -341,12 +415,44 @@ const goToProfile = () => {
   .user-meta {
     display: none;
   }
+
+  .logout-button {
+    padding: 0 6px;
+  }
+}
+
+@media screen and (max-width: 700px) {
+  .header-wrapper {
+    padding: 0px 4px 0;
+  }
+
+  .header-container {
+    padding: 0 4px;
+  }
 }
 
 .header-wrapper {
   position: relative;
   width: 100%;
-  animation: slideDown 0.3s ease-out forwards;
+  max-width: 100vw;
+  margin: 0 auto;
+
+  box-sizing: border-box;
+  transform: translateY(0);
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    transform 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s ease,
+    filter 0.42s ease;
+  will-change: transform, opacity, filter;
+}
+
+.header-wrapper.is-hidden {
+  transform: translateY(calc(-100% - 18px));
+  opacity: 0;
+  filter: blur(8px);
+  pointer-events: none;
 }
 
 .scroll-progress {
@@ -355,15 +461,5 @@ const goToProfile = () => {
   left: 0;
   width: 100%;
   border-radius: 0;
-}
-@keyframes slideDown {
-  from {
-    transform: translateY(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
 }
 </style>

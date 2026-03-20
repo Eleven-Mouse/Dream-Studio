@@ -1,6 +1,7 @@
 package blog.controller.user;
 
 import blog.dto.UserPasswordUpdateDTO;
+import blog.dto.UserAvatarUpdateDTO;
 import blog.result.Result;
 import blog.service.UserAccountService;
 import blog.vo.UserProfileVO;
@@ -50,6 +51,22 @@ public class UserController
         try {
             userAccountService.updatePassword(authentication.getName(), request.getNewPassword());
             return Result.success();
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @PostMapping("/avatar")
+    @ApiOperation("更新当前用户头像")
+    public Result<UserProfileVO> updateAvatar(@RequestBody UserAvatarUpdateDTO request,
+                                              Authentication authentication)
+    {
+        if (authentication == null || authentication.getName() == null) {
+            return Result.error(401, "未登录");
+        }
+
+        try {
+            return Result.success(userAccountService.updateAvatar(authentication.getName(), request.getAvatar()));
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }

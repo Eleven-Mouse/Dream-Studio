@@ -111,15 +111,4 @@ public class ForumController
         return Result.success(forumPostService.getSidebarData(currentPostId, limit));
     }
 
-    /*
-    获取帖子列表postlist
-    发布帖子createpost
-    删除帖子deletepost
-    获取帖子详细信息getpostdetail
-
-    创建评论
-    删除评论
-    获取评论列表
-    点赞/点踩/收藏功能
-     */
 }

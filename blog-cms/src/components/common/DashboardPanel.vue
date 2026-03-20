@@ -41,9 +41,9 @@
           <el-icon><Discount /></el-icon>
           <h4>标签管理</h4>
         </el-menu-item>
-        <el-menu-item index="/friendlinks">
-          <el-icon><Share /></el-icon>
-          <h4>友链管理</h4>
+        <el-menu-item index="/forum">
+          <el-icon><ChatDotRound /></el-icon>
+          <h4>Forum 入口</h4>
         </el-menu-item>
         <el-menu-item index="/upload">
           <el-icon><UploadFilled /></el-icon>
@@ -65,7 +65,7 @@ import {
   Comment,
   Discount,
   UploadFilled,
-  Share
+  ChatDotRound
 } from "@element-plus/icons-vue";
 import { defineProps } from "vue";
 defineProps({

@@ -17,14 +17,20 @@ export const useAuthStore = defineStore("auth", () => {
   }
 
   // 退出登录，清理 Token
-  function logout() {
+  function logout(options = {}) {
     const userStore = useUserStore();
+    const { redirectToLogin = true } = options;
+
     accessToken.value = "";
     refreshToken.value = "";
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     clearUserProfileStorage();
     userStore.clearProfile();
+
+    if (redirectToLogin && typeof window !== "undefined" && window.location.pathname !== "/login") {
+      window.location.assign("/login");
+    }
   }
 
   return { accessToken, refreshToken, setTokens, logout };

@@ -23,6 +23,9 @@ public class JwtUtil {
     private static final long DEFAULT_ACCESS_TOKEN_EXPIRATION = 2 * 60 * 60 * 1000L;
     private static final long DEFAULT_REFRESH_TOKEN_EXPIRATION = 7 * 24 * 60 * 60 * 1000L;
     private static final String DEFAULT_SECRET = "dream-studio-default-secret-key-please-change";
+    private static final String TOKEN_TYPE_CLAIM = "tokenType";
+    private static final String ACCESS_TOKEN_TYPE = "ACCESS";
+    private static final String REFRESH_TOKEN_TYPE = "REFRESH";
 
     private final JwtProperties jwtProperties;
 
@@ -39,11 +42,14 @@ public class JwtUtil {
     public String createAccessToken(String username, List<String> roles) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", roles == null ? Collections.emptyList() : roles);
+        claims.put(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE);
         return buildToken(username, claims, resolveAccessTokenExpiration());
     }
 
     public String createRefreshToken(String username) {
-        return buildToken(username, Collections.emptyMap(), resolveRefreshTokenExpiration());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE);
+        return buildToken(username, claims, resolveRefreshTokenExpiration());
     }
 
     public Claims parseToken(String token) {

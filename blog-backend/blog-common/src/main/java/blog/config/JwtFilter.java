@@ -24,24 +24,26 @@ public class JwtFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
-    private static final List<String> PERMIT_ALL_PATHS = List.of(
-            "/v1/auth/login",
-            "/v1/auth/test",
+    private static final List<String> EXCLUDED_PATH_PREFIXES = List.of(
+            "/v1/auth/",
+            "/api/auth/",
+            "/admin/auth/",
             "/user/login",
             "/user/register",
             "/captcha/send",
             "/actuator/health"
     );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request)
+    {
+        String path = request.getRequestURI();
+        return EXCLUDED_PATH_PREFIXES.stream().anyMatch(path::startsWith);
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-
-        String path = request.getRequestURI();
-
-        if (isPermitAllPath(path)) {
-            chain.doFilter(request, response);
-            return;
-        }
 
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
@@ -51,6 +53,12 @@ public class JwtFilter extends OncePerRequestFilter {
                 Claims claims = jwtUtil.parseToken(token);
 
                 String username = claims.getSubject();
+                String tokenType = claims.get("tokenType", String.class);
+
+                if (StringUtils.hasText(tokenType) && !"ACCESS".equalsIgnoreCase(tokenType)) {
+                    chain.doFilter(request, response);
+                    return;
+                }
 
                 List<String> roles = claims.get("roles", List.class);
 
@@ -72,14 +80,5 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
-    }
-
-    private boolean isPermitAllPath(String path) {
-        for (String permitPath : PERMIT_ALL_PATHS) {
-            if (path.startsWith(permitPath)) {
-                return true;
-            }
-        }
-        return false;
     }
 }
