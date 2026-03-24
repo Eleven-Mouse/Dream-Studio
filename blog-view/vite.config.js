@@ -4,6 +4,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+const devProxyTarget = process.env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080'
 
 export default defineConfig({
   plugins: [vue(), vueDevTools()],
@@ -25,11 +26,11 @@ export default defineConfig({
 
     proxy: {
       '/api': {
-        target: 'http://localhost:8081',
+        target: devProxyTarget,
         changeOrigin: true,
       },
       '/admin': {
-        target: 'http://localhost:8081',
+        target: devProxyTarget,
         changeOrigin: true,
       },
     },

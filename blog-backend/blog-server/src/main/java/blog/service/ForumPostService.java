@@ -13,11 +13,13 @@ public interface ForumPostService
 
     ForumPostVO getPostById(Long id);
 
+    ForumPostVO findPostById(Long id);
+
     ForumPostVO createPost(ForumPostDTO forumPostDTO);
 
     Map<String, List<ForumPostVO>> getSidebarData(Long currentPostId, int limit);
 
-    Map<String, Object> listAdminPosts(int page, int size, String keyword);
+    Map<String, Object> listAdminPosts(int page, int size, String keyword, Long authorId);
 
     void updateAdminPostMeta(Long id, ForumPostAdminUpdateDTO updateDTO);
 

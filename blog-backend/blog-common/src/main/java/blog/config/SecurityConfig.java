@@ -47,6 +47,22 @@ public class SecurityConfig
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
+                                HttpMethod.GET,
+                                "/admin",
+                                "/admin/articlemgmt",
+                                "/admin/commentmgmt",
+                                "/admin/momentsmgmt",
+                                "/admin/content",
+                                "/admin/writearticle",
+                                "/admin/article/edit/*",
+                                "/admin/writemoment",
+                                "/admin/categorisemgmt",
+                                "/admin/tagsmgmt",
+                                "/admin/forum-entry",
+                                "/admin/site",
+                                "/admin/usermgmt"
+                        ).permitAll()
+                        .requestMatchers(
                                 "/error",
                                 "/favicon.ico",
                                 "/static/**",
@@ -58,8 +74,7 @@ public class SecurityConfig
                                 "/v3/api-docs/**",
                                 "/actuator/health",
                                 "/v1/auth/**",
-                                "/api/auth/**",
-                                "/admin/auth/**"
+                                "/api/auth/**"
                         ).permitAll()
                         .requestMatchers("/api/user/**", "/api/archive/**", "/admin/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/post", "/api/comments/**").authenticated()

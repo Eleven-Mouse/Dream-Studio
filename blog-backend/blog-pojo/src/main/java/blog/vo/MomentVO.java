@@ -17,6 +17,12 @@ public class MomentVO implements Serializable
      */
     private Long id;
 
+    private Long authorId;
+
+    private String authorNickname;
+
+    private String authorAvatar;
+
     /**
      * 动态内容
      */

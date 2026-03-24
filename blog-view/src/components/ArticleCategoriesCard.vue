@@ -9,8 +9,8 @@
         </div>
       </template>
       <ul class="category-list">
-        <li v-for="category in categoriesData" :key="category.name" class="category-item">
-          <router-link :to="`/categories/${category.name}`">
+        <li v-for="category in categoriesData" :key="category.id || category.name" class="category-item">
+          <router-link :to="`/category/${category.id}`">
             <span>{{ category.name }}</span>
             <span>{{ category.count }}</span>
           </router-link>

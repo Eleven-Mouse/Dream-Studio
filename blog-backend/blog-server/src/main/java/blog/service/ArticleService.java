@@ -32,6 +32,8 @@ public interface ArticleService {
      */
     List<ArticleVO> listArticles(ArticleQueryDTO queryDTO);
 
+    ArticleVO findArticleById(Long id);
+
     /**
      * 根据ID查询文章
      * @param id 文章ID

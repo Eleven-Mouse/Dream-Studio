@@ -21,6 +21,8 @@ public class ArticleDTO implements Serializable {
 
     private String title;
 
+    private Long authorId;
+
     /**
      * 文章摘要
      */

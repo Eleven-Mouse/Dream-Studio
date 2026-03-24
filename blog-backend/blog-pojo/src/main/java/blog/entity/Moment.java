@@ -23,6 +23,8 @@ public class Moment {
      */
     private Long id;
 
+    private Long authorId;
+
     /**
      * 动态内容
      */

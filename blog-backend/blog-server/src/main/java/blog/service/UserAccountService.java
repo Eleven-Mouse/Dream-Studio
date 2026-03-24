@@ -3,7 +3,10 @@ package blog.service;
 import blog.dto.Login.GithubOAuthUserDTO;
 import blog.dto.Login.GithubRegistrationSession;
 import blog.entity.UserAccount;
+import blog.vo.AdminUserVO;
 import blog.vo.UserProfileVO;
+
+import java.util.List;
 
 public interface UserAccountService
 {
@@ -23,6 +26,12 @@ public interface UserAccountService
     void updatePassword(String username, String newPassword);
 
     UserProfileVO updateAvatar(String username, String avatar);
+
+    List<AdminUserVO> listActiveUsers();
+
+    AdminUserVO updateUserAdminRole(Long userId, Boolean admin, String operatorUsername);
+
+    void deleteUser(Long userId, String operatorUsername);
 
     void ensureAdminAccount();
 

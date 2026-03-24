@@ -25,9 +25,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private JwtUtil jwtUtil;
 
     private static final List<String> EXCLUDED_PATH_PREFIXES = List.of(
-            "/v1/auth/",
             "/api/auth/",
-            "/admin/auth/",
             "/user/login",
             "/user/register",
             "/captcha/send",

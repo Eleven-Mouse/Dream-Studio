@@ -108,11 +108,13 @@ import { createArticle, getArticleById, updateArticle } from '@/api/article'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { uploadImage } from '@/api/upload'
+import { useWorkspaceRouteBase } from '@/composables/useWorkspaceRouteBase'
 
 const router = useRouter()
 const articleFormRef = ref(null)
 const loading = ref(false)
 const route = useRoute()
+const { routeBase } = useWorkspaceRouteBase()
 const uploadBaseUrl = import.meta.env.VITE_APP_UPLOAD_URL || ''
 
 const articleForm = ref({
@@ -142,14 +144,14 @@ watch(
   () => props.initData,
   (newData) => {
     if (newData) {
-      articleForm.value.title = newData.title;
-      articleForm.value.summary = newData.summary;
-      articleForm.value.content = newData.content;
+      articleForm.value.title = newData.title
+      articleForm.value.summary = newData.summary
+      articleForm.value.content = newData.content
     }
   },
 
   {
-      immediate: true, //立即执行
+    immediate: true,
     deep: true,
   }
 )
@@ -176,7 +178,7 @@ const submitArticle = async (status) => {
       await createArticle(articleData)
       ElMessage.success(status === 1 ? '文章发布成功' : '草稿保存成功')
     }
-    router.push('/admin/content')
+    router.push(`${routeBase.value}/articlemgmt`)
   } catch (error) {
     console.error('Failed to submit article:', error)
     ElMessage.error('操作失败，请重试')

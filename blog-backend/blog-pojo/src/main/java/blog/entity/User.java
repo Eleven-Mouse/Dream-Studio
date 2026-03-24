@@ -29,6 +29,7 @@ public class User {
 
     private String signature;
 
+
     private String role;  // user/admin
 
     private Integer status;  // 0-禁用 1-正常

@@ -32,6 +32,13 @@ public class MomentServiceImpl implements MomentService
     }
 
     @Override
+    public List<MomentVO> listMomentsByAuthorId(Long authorId)
+    {
+        log.info("查询用户动态，authorId={}", authorId);
+        return momentMapper.selectByAuthorId(authorId);
+    }
+
+    @Override
     @Transactional
     public void createMoment(MomentDTO momentDTO)
     {

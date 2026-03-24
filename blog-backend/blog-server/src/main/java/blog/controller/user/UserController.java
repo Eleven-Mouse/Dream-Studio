@@ -23,6 +23,8 @@ public class UserController
     @Autowired
     private UserAccountService userAccountService;
 
+
+
     @GetMapping("/me")
     @ApiOperation("获取当前登录用户资料")
     public Result<UserProfileVO> getCurrentUser(Authentication authentication)

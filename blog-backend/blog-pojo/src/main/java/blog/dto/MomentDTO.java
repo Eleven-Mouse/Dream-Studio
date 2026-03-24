@@ -16,6 +16,9 @@ import lombok.*;
 public class MomentDTO
 {
     private Integer id;
+
+    private Long authorId;
+
     /**
      * 动态内容
      */

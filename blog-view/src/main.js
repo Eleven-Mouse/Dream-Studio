@@ -17,4 +17,6 @@ app.use(ElementPlus)
 
 useUserStore(pinia).hydrateProfile(localStorage.getItem('accessToken') || '')
 
+await router.isReady()
+
 app.mount('#app')

@@ -36,8 +36,8 @@ public class ForumPostServiceImpl implements ForumPostService
         int safeSize = Math.max(size, 1);
         int offset = (safePage - 1) * safeSize;
 
-        List<ForumPostVO> posts = forumPostMapper.selectPage(normalizeSort(sort), offset, safeSize, null, null, false);
-        Long total = forumPostMapper.countPage(null, null, false);
+        List<ForumPostVO> posts = forumPostMapper.selectPage(normalizeSort(sort), offset, safeSize, null, null, null, false);
+        Long total = forumPostMapper.countPage(null, null, null, false);
 
         Map<String, Object> result = new HashMap<>();
         result.put("data", posts);
@@ -56,6 +56,12 @@ public class ForumPostServiceImpl implements ForumPostService
         }
 
         forumPostMapper.incrementViewCount(id);
+        return forumPostMapper.selectById(id);
+    }
+
+    @Override
+    public ForumPostVO findPostById(Long id)
+    {
         return forumPostMapper.selectById(id);
     }
 
@@ -91,12 +97,12 @@ public class ForumPostServiceImpl implements ForumPostService
     {
         int safeLimit = Math.max(limit, 1);
 
-        List<ForumPostVO> latest = forumPostMapper.selectPage("latest", 0, safeLimit, null, currentPostId, false);
-        List<ForumPostVO> recommendations = forumPostMapper.selectPage("featured", 0, safeLimit, null, currentPostId, true);
+        List<ForumPostVO> latest = forumPostMapper.selectPage("latest", 0, safeLimit, null, null, currentPostId, false);
+        List<ForumPostVO> recommendations = forumPostMapper.selectPage("featured", 0, safeLimit, null, null, currentPostId, true);
 
         if (recommendations.size() < safeLimit) {
             List<Long> existingIds = recommendations.stream().map(ForumPostVO::getId).collect(Collectors.toList());
-            List<ForumPostVO> hotPosts = forumPostMapper.selectPage("hot", 0, safeLimit * 2, null, currentPostId, false);
+            List<ForumPostVO> hotPosts = forumPostMapper.selectPage("hot", 0, safeLimit * 2, null, null, currentPostId, false);
             for (ForumPostVO hotPost : hotPosts) {
                 if (recommendations.size() >= safeLimit) {
                     break;
@@ -115,14 +121,14 @@ public class ForumPostServiceImpl implements ForumPostService
     }
 
     @Override
-    public Map<String, Object> listAdminPosts(int page, int size, String keyword)
+    public Map<String, Object> listAdminPosts(int page, int size, String keyword, Long authorId)
     {
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
         int offset = (safePage - 1) * safeSize;
 
-        List<ForumPostVO> posts = forumPostMapper.selectPage("latest", offset, safeSize, trimToNull(keyword), null, false);
-        Long total = forumPostMapper.countPage(trimToNull(keyword), null, false);
+        List<ForumPostVO> posts = forumPostMapper.selectPage("latest", offset, safeSize, trimToNull(keyword), authorId, null, false);
+        Long total = forumPostMapper.countPage(trimToNull(keyword), authorId, null, false);
 
         Map<String, Object> result = new HashMap<>();
         result.put("data", posts);

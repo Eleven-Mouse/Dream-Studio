@@ -11,6 +11,7 @@ import blog.mapper.ForumPostMapper;
 import blog.mapper.ForumReportMapper;
 import blog.mapper.UserAccountMapper;
 import blog.mapper.UserNotificationMapper;
+import blog.service.AccessControlService;
 import blog.service.ForumPostService;
 import blog.service.UserAccountService;
 import blog.service.UserCenterService;
@@ -54,6 +55,9 @@ public class UserCenterServiceImpl implements UserCenterService
     @Autowired
     private ForumPostService forumPostService;
 
+    @Autowired
+    private AccessControlService accessControlService;
+
     @Override
     public UserCenterOverviewVO getOverview(String username)
     {
@@ -68,7 +72,7 @@ public class UserCenterServiceImpl implements UserCenterService
                 : forumReportMapper.selectByReporterId(currentUser.getId(), CENTER_LIST_LIMIT);
         List<UserNotificationVO> notifications = userNotificationMapper.selectByUserId(currentUser.getId(), CENTER_LIST_LIMIT);
         List<ForumPostVO> moderationPosts = admin
-                ? forumPostMapper.selectPage("latest", 0, CENTER_LIST_LIMIT, null, null, false)
+                ? forumPostMapper.selectPage("latest", 0, CENTER_LIST_LIMIT, null, null, null, false)
                 : Collections.emptyList();
 
         UserCenterOverviewVO overview = new UserCenterOverviewVO();
@@ -112,7 +116,7 @@ public class UserCenterServiceImpl implements UserCenterService
         forumReportMapper.insert(report);
 
         String reporterName = StringUtils.hasText(currentUser.getNickname()) ? currentUser.getNickname() : currentUser.getUsername();
-        List<UserAccount> admins = userAccountMapper.selectByRole("ADMIN");
+        List<UserAccount> admins = userAccountMapper.selectAdmins();
         for (UserAccount admin : admins) {
             createNotification(
                     admin.getId(),
@@ -141,7 +145,7 @@ public class UserCenterServiceImpl implements UserCenterService
     @Override
     public ForumReportVO reviewReport(String username, Long reportId, ForumReportReviewDTO request)
     {
-        UserAccount currentUser = requireAdmin(username);
+        UserAccount currentUser = accessControlService.requireAdmin(username);
         if (request == null || !StringUtils.hasText(request.getStatus())) {
             throw new IllegalArgumentException("处理状态不能为空");
         }
@@ -180,14 +184,14 @@ public class UserCenterServiceImpl implements UserCenterService
     @Override
     public void updateAdminPostMeta(String username, Long postId, ForumPostAdminUpdateDTO request)
     {
-        requireAdmin(username);
+        accessControlService.requireAdmin(username);
         forumPostService.updateAdminPostMeta(postId, request);
     }
 
     @Override
     public void deleteAdminPost(String username, Long postId)
     {
-        requireAdmin(username);
+        accessControlService.requireAdmin(username);
         forumPostService.deletePost(postId);
     }
 
@@ -233,25 +237,17 @@ public class UserCenterServiceImpl implements UserCenterService
 
     private UserAccount requireUser(String username)
     {
-        UserAccount user = userAccountService.findByUsername(username);
-        if (user == null) {
-            throw new IllegalArgumentException("当前用户不存在");
-        }
-        return user;
+        return accessControlService.requireUser(username);
     }
 
     private UserAccount requireAdmin(String username)
     {
-        UserAccount user = requireUser(username);
-        if (!isAdmin(user)) {
-            throw new IllegalArgumentException("当前用户没有管理员权限");
-        }
-        return user;
+        return accessControlService.requireAdmin(username);
     }
 
     private boolean isAdmin(UserAccount user)
     {
-        return user != null && "ADMIN".equalsIgnoreCase(user.getRole());
+        return accessControlService.isAdmin(user);
     }
 
     private String trimToNull(String value)

@@ -2,7 +2,7 @@
   <div class="header-wrapper" :class="{ 'is-hidden': isHeaderHidden }">
     <div class="header-container">
       <div class="logo">
-        <a href="/home">Dream-studio </a>
+        <router-link to="/home">Dream-studio</router-link>
       </div>
       <div class="search-bar">
         <el-autocomplete
@@ -31,7 +31,7 @@
         <el-menu-item index="/home"
           ><el-icon><HomeFilled /></el-icon>Home</el-menu-item
         >
-        <el-sub-menu index="/categories">
+        <el-sub-menu index="categories-menu">
           <template #title
             ><el-icon><Grid /></el-icon>categories</template
           >
@@ -69,7 +69,6 @@
         <el-avatar v-else :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
         <div class="user-meta">
           <span class="user-name">{{ displayName }}</span>
-          <small>{{ isAdmin ? '后台管理' : isLoggedIn ? '个人中心' : '游客模式' }}</small>
         </div>
       </div>
       <el-button v-if="isLoggedIn" text class="logout-button" @click.stop="handleLogout"
@@ -148,7 +147,7 @@ watch(
     } else if (newPath.startsWith('/forum')) {
       activeIndex.value = '/forum'
     } else if (newPath.startsWith('/category/')) {
-      activeIndex.value = '/categories'
+      activeIndex.value = 'categories-menu'
       currentCategoryId.value = route.params.id
     } else {
       activeIndex.value = newPath
@@ -280,11 +279,12 @@ const goToProfile = () => {
       isAdmin: true,
       accessToken: authStore.accessToken,
       router,
+      targetPath: '/admin/articlemgmt',
     })
     return
   }
 
-  router.push('/profile')
+  router.push('/profile/articlemgmt')
 }
 
 const handleLogout = async () => {
@@ -317,7 +317,6 @@ const handleLogout = async () => {
   color: var(--app-text-color);
   text-decoration: none;
   margin-right: 20px;
-  background-image: url('../assets/\ \(4\).png');
 }
 
 .search-bar {

@@ -68,14 +68,14 @@ public class CommonsUtils {
      * 获取网站URL
      */
     public String site_url() {
-        return "http://localhost:8080";
+        return "http://localhost:3000";
     }
 
     /**
      * 获取网站URL（带路径）
      */
     public String site_url(String path) {
-        return "http://localhost:8080" + path;
+        return "http://localhost:3000" + path;
     }
 
     /**

@@ -6,6 +6,9 @@
     <update id="update">
         update moment
         <set>
+            <if test="authorId != null">
+                author_id = #{authorId},
+            </if>
             <if test="content != null">
                 content = #{content},
             </if>

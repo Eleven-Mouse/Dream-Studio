@@ -18,14 +18,20 @@ public class LoginResponse
     private String avatar;
     private String email;
     private String phone;
+    private String role;
 
-    public LoginResponse(String accessToken, String refreshToken, String username, Boolean needsPasswordSetup)
+    public LoginResponse(String accessToken,
+                         String refreshToken,
+                         String username,
+                         Boolean needsPasswordSetup,
+                         String role)
     {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.username = username;
         this.needsPasswordSetup = needsPasswordSetup;
         this.needsRegistration = false;
+        this.role = role;
     }
 
     public static LoginResponse githubRegistrationPending(String registrationToken,
@@ -46,6 +52,7 @@ public class LoginResponse
         response.setAvatar(avatar);
         response.setEmail(email);
         response.setPhone(phone);
+        response.setRole("USER");
         return response;
     }
 }

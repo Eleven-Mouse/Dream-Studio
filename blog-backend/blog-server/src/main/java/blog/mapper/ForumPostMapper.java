@@ -20,10 +20,12 @@ public interface ForumPostMapper
                                  @Param("offset") int offset,
                                  @Param("size") int size,
                                  @Param("keyword") String keyword,
+                                 @Param("authorId") Long authorId,
                                  @Param("excludeId") Long excludeId,
                                  @Param("featuredOnly") Boolean featuredOnly);
 
     Long countPage(@Param("keyword") String keyword,
+                   @Param("authorId") Long authorId,
                    @Param("excludeId") Long excludeId,
                    @Param("featuredOnly") Boolean featuredOnly);
 

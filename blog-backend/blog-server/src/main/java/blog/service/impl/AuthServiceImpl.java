@@ -91,7 +91,8 @@ public class AuthServiceImpl implements AuthService
         String refreshToken = jwtUtil.createRefreshToken(username);
 
         // 4. 返回结果
-        return new LoginResponse(accessToken, refreshToken, username, false);
+        String role = roles.stream().anyMatch(item -> "ROLE_ADMIN".equalsIgnoreCase(item)) ? "ADMIN" : "USER";
+        return new LoginResponse(accessToken, refreshToken, username, false, role);
     }
 
     @Override
@@ -198,10 +199,11 @@ public class AuthServiceImpl implements AuthService
 
     private LoginResponse buildAuthenticatedResponse(String username, String role, boolean needsPasswordSetup)
     {
-        List<String> roles = List.of("ROLE_" + Objects.requireNonNullElse(role, "USER").toUpperCase());
+        String resolvedRole = StringUtils.hasText(role) ? role.toUpperCase() : "USER";
+        List<String> roles = List.of("ROLE_" + resolvedRole);
         String accessToken = jwtUtil.createAccessToken(username, roles);
         String refreshToken = jwtUtil.createRefreshToken(username);
-        return new LoginResponse(accessToken, refreshToken, username, needsPasswordSetup);
+        return new LoginResponse(accessToken, refreshToken, username, needsPasswordSetup, resolvedRole);
     }
 
     private String generateSuggestedUsername(String githubLogin, Long githubId)
@@ -255,7 +257,7 @@ public class AuthServiceImpl implements AuthService
         String accessToken = jwtUtil.createAccessToken(username, roles);
         String refreshToken = jwtUtil.createRefreshToken(username);
         boolean needsPasswordSetup = !Boolean.TRUE.equals(profile.getPasswordInitialized());
-        return new LoginResponse(accessToken, refreshToken, username, needsPasswordSetup);
+        return new LoginResponse(accessToken, refreshToken, username, needsPasswordSetup, role);
     }
 
     private void ensureGithubConfigured()

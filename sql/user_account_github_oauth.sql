@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS `user_account` (
   `nickname` varchar(100) NOT NULL COMMENT '昵称',
   `avatar` varchar(500) DEFAULT NULL COMMENT '头像地址',
   `email` varchar(255) DEFAULT NULL COMMENT '邮箱',
+  `phone` varchar(30) DEFAULT NULL COMMENT '手机号',
   `password_hash` varchar(255) DEFAULT NULL COMMENT '站内密码哈希',
   `bio` varchar(500) DEFAULT NULL COMMENT '简介',
   `role` varchar(30) NOT NULL DEFAULT 'USER' COMMENT '角色',
@@ -21,6 +22,9 @@ CREATE TABLE IF NOT EXISTS `user_account` (
 
 ALTER TABLE `user_account`
   ADD COLUMN IF NOT EXISTS `password_hash` varchar(255) DEFAULT NULL COMMENT '站内密码哈希' AFTER `email`;
+
+ALTER TABLE `user_account`
+  ADD COLUMN IF NOT EXISTS `phone` varchar(30) DEFAULT NULL COMMENT '手机号' AFTER `email`;
 
 ALTER TABLE `user_account`
   ADD COLUMN IF NOT EXISTS `github_id` bigint DEFAULT NULL COMMENT 'GitHub 用户ID' AFTER `username`;

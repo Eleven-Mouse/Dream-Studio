@@ -3,7 +3,7 @@
     <el-text class="mx-1">
       <div class="about-header">
         <h1>关于</h1>
-        <h2>| Eleven-blog |</h2>
+        <h2>| Dream-studio |</h2>
       </div>
       <div class="about-main">
         <my-bot-ui />

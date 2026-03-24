@@ -1,6 +1,6 @@
 import { ElMessage } from 'element-plus'
 
-export const openAdminApp = ({ isAdmin, accessToken, router, targetPath = '/admin/home' }) => {
+export const openAdminApp = ({ isAdmin, accessToken, router, targetPath = '/admin/articlemgmt' }) => {
   if (!isAdmin) {
     ElMessage.info('当前账号暂无后台管理权限')
     return false

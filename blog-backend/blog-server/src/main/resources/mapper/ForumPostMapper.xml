@@ -50,6 +50,9 @@
                     OR fp.nickname LIKE CONCAT('%', #{keyword}, '%')
                 )
             </if>
+            <if test="authorId != null">
+                AND fp.author_id = #{authorId}
+            </if>
             <if test="excludeId != null">
                 AND fp.id != #{excludeId}
             </if>
