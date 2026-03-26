@@ -102,9 +102,13 @@
 import { ref, onMounted, watch, defineProps } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getAllCategories } from '@/api/category'
-import { getAllTags } from '@/api/tags'
-import { createArticle, getArticleById, updateArticle } from '@/api/article'
+import { fetchCategories } from '@/api/categories'
+import { fetchTags } from '@/api/tags'
+import {
+  createManagedArticle,
+  fetchManagedArticleById,
+  updateManagedArticle,
+} from '@/api/article'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { uploadImage } from '@/api/upload'
@@ -167,17 +171,18 @@ const submitArticle = async (status) => {
   const articleData = {
     ...articleForm.value,
     tags: articleForm.value.tags.join(','),
-    status: status,
+    status,
   }
 
   try {
     if (articleForm.value.id) {
-      await updateArticle(articleData.id, articleData)
+      await updateManagedArticle(articleData.id, articleData)
       ElMessage.success(status === 1 ? '文章更新成功' : '草稿已更新')
     } else {
-      await createArticle(articleData)
+      await createManagedArticle(articleData)
       ElMessage.success(status === 1 ? '文章发布成功' : '草稿保存成功')
     }
+
     router.push(`${routeBase.value}/articlemgmt`)
   } catch (error) {
     console.error('Failed to submit article:', error)
@@ -189,8 +194,8 @@ const submitArticle = async (status) => {
 
 onMounted(async () => {
   try {
-    categories.value = await getAllCategories()
-    tagsList.value = await getAllTags()
+    categories.value = await fetchCategories()
+    tagsList.value = await fetchTags()
   } catch (error) {
     console.error('Failed to load categories or tags:', error)
     ElMessage.error('加载分类或标签失败')
@@ -219,7 +224,7 @@ const publishArticle = () => {
 
 const loadArticleDetail = async (id) => {
   try {
-    const data = await getArticleById(id)
+    const data = await fetchManagedArticleById(id)
 
     articleForm.value = {
       id: data.id,

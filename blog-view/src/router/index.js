@@ -1,10 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import { useUserStore } from '@/store/user'
+import { WORKSPACE_CAPABILITIES } from '@/utils/workspaceCapabilities'
 
 const workspaceViewLoaders = {
   user: {
     layout: () => import('@/views/user/Layout.vue'),
+    overview: () => import('@/views/user/ProfileOverview.vue'),
+    notifications: () => import('@/views/user/NotificationCenter.vue'),
+    account: () => import('@/views/user/AccountSettings.vue'),
     articleManagement: () => import('@/views/user/ArticleManagement.vue'),
     momentManagement: () => import('@/views/user/MomentManagement.vue'),
     articleEditor: () => import('@/views/user/PostArticle.vue'),
@@ -14,8 +18,10 @@ const workspaceViewLoaders = {
   },
   admin: {
     layout: () => import('@/views/admin/Layout.vue'),
+    overview: () => import('@/views/admin/AdminOverview.vue'),
     articleManagement: () => import('@/views/admin/ArticleManagement.vue'),
     commentManagement: () => import('@/views/admin/AdminCommentManagement.vue'),
+    reportManagement: () => import('@/views/admin/AdminReportManagement.vue'),
     momentManagement: () => import('@/views/admin/MomentManagement.vue'),
     articleEditor: () => import('@/views/admin/PostArticle.vue'),
     momentEditor: () => import('@/views/admin/PostMoment.vue'),
@@ -36,17 +42,71 @@ const createWorkspaceChildren = (workspaceMode) => {
 
   const routes = [
     {
+      path: 'overview',
+      name: `${routeNamePrefix}Overview`,
+      component: views.overview,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: isAdminWorkspace
+          ? WORKSPACE_CAPABILITIES.DASHBOARD_VIEW
+          : WORKSPACE_CAPABILITIES.PROFILE_OVERVIEW_VIEW,
+      },
+    },
+    {
       path: 'articlemgmt',
       name: `${routeNamePrefix}ArticleMgmt`,
       component: views.articleManagement,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: isAdminWorkspace
+          ? WORKSPACE_CAPABILITIES.ARTICLE_MANAGE_ALL
+          : WORKSPACE_CAPABILITIES.ARTICLE_MANAGE_OWN,
+      },
     },
   ]
+
+  if (!isAdminWorkspace) {
+    routes.splice(1, 0,
+      {
+        path: 'notifications',
+        name: `${routeNamePrefix}Notifications`,
+        component: views.notifications,
+        meta: {
+          requiresAuth: true,
+          requiredCapability: WORKSPACE_CAPABILITIES.PROFILE_NOTIFICATIONS_VIEW,
+        },
+      },
+      {
+        path: 'account',
+        name: `${routeNamePrefix}Account`,
+        component: views.account,
+        meta: {
+          requiresAuth: true,
+          requiredCapability: WORKSPACE_CAPABILITIES.PROFILE_ACCOUNT_EDIT,
+        },
+      },
+    )
+  }
 
   if (isAdminWorkspace) {
     routes.push({
       path: 'commentmgmt',
       name: 'adminCommentMgmt',
       component: views.commentManagement,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.COMMENT_MODERATE,
+      },
+    })
+
+    routes.push({
+      path: 'reportmgmt',
+      name: 'adminReportMgmt',
+      component: views.reportManagement,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.REPORT_REVIEW,
+      },
     })
   }
 
@@ -55,6 +115,12 @@ const createWorkspaceChildren = (workspaceMode) => {
       path: 'momentsmgmt',
       name: `${routeNamePrefix}MomentsMgmt`,
       component: views.momentManagement,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: isAdminWorkspace
+          ? WORKSPACE_CAPABILITIES.MOMENT_MANAGE_ALL
+          : WORKSPACE_CAPABILITIES.MOMENT_MANAGE_OWN,
+      },
     },
     {
       path: 'content',
@@ -64,16 +130,28 @@ const createWorkspaceChildren = (workspaceMode) => {
       path: 'writearticle',
       name: `${routeNamePrefix}WriteArticle`,
       component: views.articleEditor,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.ARTICLE_WRITE,
+      },
     },
     {
       path: 'article/edit/:id',
       name: `${routeNamePrefix}EditArticle`,
       component: views.articleEditor,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.ARTICLE_WRITE,
+      },
     },
     {
       path: 'writemoment',
       name: `${routeNamePrefix}WriteMoment`,
       component: views.momentEditor,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.MOMENT_WRITE,
+      },
     },
   )
 
@@ -83,16 +161,28 @@ const createWorkspaceChildren = (workspaceMode) => {
         path: 'categorisemgmt',
         name: 'adminCategoriseMgmt',
         component: views.categoryManagement,
+        meta: {
+          requiresAuth: true,
+          requiredCapability: WORKSPACE_CAPABILITIES.TAXONOMY_MANAGE,
+        },
       },
       {
         path: 'tagsmgmt',
         name: 'adminTagsMgmt',
         component: views.tagManagement,
+        meta: {
+          requiresAuth: true,
+          requiredCapability: WORKSPACE_CAPABILITIES.TAXONOMY_MANAGE,
+        },
       },
       {
         path: 'usermgmt',
         name: 'adminUserMgmt',
         component: views.userManagement,
+        meta: {
+          requiresAuth: true,
+          requiredCapability: WORKSPACE_CAPABILITIES.USER_MANAGE,
+        },
       },
     )
   }
@@ -102,11 +192,21 @@ const createWorkspaceChildren = (workspaceMode) => {
       path: 'forum-publish',
       name: `${routeNamePrefix}ForumPublish`,
       component: views.forumPublish,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.FORUM_POST_WRITE,
+      },
     },
     {
       path: 'forum-manage',
       name: `${routeNamePrefix}ForumManage`,
       component: views.forumManagement,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: isAdminWorkspace
+          ? WORKSPACE_CAPABILITIES.FORUM_POST_MODERATE
+          : WORKSPACE_CAPABILITIES.FORUM_POST_MANAGE_OWN,
+      },
     },
     {
       path: 'forum-entry',
@@ -119,6 +219,10 @@ const createWorkspaceChildren = (workspaceMode) => {
       path: 'site',
       name: 'adminSite',
       component: views.siteOverview,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.SITE_MANAGE,
+      },
     })
   }
 
@@ -196,14 +300,14 @@ const router = createRouter({
     {
       path: '/profile',
       component: workspaceViewLoaders.user.layout,
-      redirect: '/profile/articlemgmt',
+      redirect: '/profile/overview',
       meta: { requiresAuth: true },
       children: createWorkspaceChildren('user'),
     },
     {
       path: '/admin',
       component: workspaceViewLoaders.admin.layout,
-      redirect: '/admin/articlemgmt',
+      redirect: '/admin/overview',
       meta: { requiresAuth: true, requiresAdmin: true },
       children: createWorkspaceChildren('admin'),
     },
@@ -231,6 +335,7 @@ router.beforeEach((to) => {
   const isLoggedIn = Boolean(authStore.accessToken)
   const requiresAuth = Boolean(to.meta?.requiresAuth)
   const requiresAdmin = Boolean(to.meta?.requiresAdmin)
+  const requiredCapability = to.meta?.requiredCapability
 
   if (!isLoggedIn && requiresAuth) {
     return {
@@ -244,7 +349,13 @@ router.beforeEach((to) => {
   }
 
   if (requiresAdmin && !userStore.isAdmin) {
-    return '/profile/articlemgmt'
+    return '/profile/overview'
+  }
+
+  if (requiredCapability && !userStore.hasCapability(requiredCapability)) {
+    return userStore.hasCapability(WORKSPACE_CAPABILITIES.DASHBOARD_VIEW)
+      ? '/admin/overview'
+      : '/profile/overview'
   }
 
   return true

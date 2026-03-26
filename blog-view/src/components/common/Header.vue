@@ -63,7 +63,7 @@
         </a>
       </div>
       <div class="user-entry" @click="goToProfile">
-        <el-badge v-if="isAdmin" value="Admin" class="user-badge">
+        <el-badge v-if="canViewAdminDashboard" value="Admin" class="user-badge">
           <el-avatar :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
         </el-badge>
         <el-avatar v-else :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
@@ -95,6 +95,7 @@ import { fetchArticles } from '@/api/article.js'
 import { useAuthStore } from '@/store/auth'
 import { useUserStore } from '@/store/user'
 import { openAdminApp } from '@/utils/adminBridge'
+import { WORKSPACE_CAPABILITIES } from '@/utils/workspaceCapabilities'
 import {
   Search,
   HomeFilled,
@@ -127,7 +128,9 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const displayName = computed(() => currentProfile.value.nickname)
 const userAvatar = computed(() => currentProfile.value.avatar)
 const userInitial = computed(() => displayName.value?.slice(0, 1)?.toUpperCase() || 'D')
-const isAdmin = computed(() => userStore.isAdmin)
+const canViewAdminDashboard = computed(() =>
+  userStore.hasCapability(WORKSPACE_CAPABILITIES.DASHBOARD_VIEW),
+)
 
 // 获取分类列表
 const loadCategories = async () => {
@@ -274,17 +277,17 @@ const handleSelectArticle = (item) => {
 }
 
 const goToProfile = () => {
-  if (isAdmin.value) {
+  if (canViewAdminDashboard.value) {
     openAdminApp({
       isAdmin: true,
       accessToken: authStore.accessToken,
       router,
-      targetPath: '/admin/articlemgmt',
+      targetPath: '/admin/overview',
     })
     return
   }
 
-  router.push('/profile/articlemgmt')
+  router.push('/profile/overview')
 }
 
 const handleLogout = async () => {
