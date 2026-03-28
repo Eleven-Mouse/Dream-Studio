@@ -18,9 +18,9 @@ public interface ArticleMapper {
      * 插入文章
      */
     @Insert("INSERT INTO article(title, summary, content, cover_image, category_id, tags, " +
-            "author_id, view_count, is_comment, status, publish_time, create_time, update_time) " +
+            "author_id, view_count, is_comment, is_featured, status, publish_time, create_time, update_time) " +
             "VALUES(#{title}, #{summary}, #{content}, #{coverImage}, #{categoryId}, #{tags}, " +
-            "#{authorId}, #{viewCount}, #{isComment}, #{status}, #{publishTime}, #{createTime}, #{updateTime})")
+            "#{authorId}, #{viewCount}, #{isComment}, #{isFeatured}, #{status}, #{publishTime}, #{createTime}, #{updateTime})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(Article article);
 
@@ -29,7 +29,7 @@ public interface ArticleMapper {
      */
     @Select("SELECT a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage, " +
             "a.category_id as categoryId, a.tags, a.view_count as viewCount, " +
-            "a.is_comment as isComment, a.status, a.publish_time as publishTime, " +
+            "a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime, " +
             "a.create_time as createTime, a.update_time as updateTime, c.name as categoryName, " +
             "ua.nickname as authorNickname, ua.avatar as authorAvatar " +
             "FROM article a " +
@@ -45,7 +45,7 @@ public interface ArticleMapper {
      */
     @Select("SELECT a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage, " +
             "a.category_id as categoryId, a.tags, a.view_count as viewCount, " +
-            "a.is_comment as isComment, a.status, a.publish_time as publishTime, " +
+            "a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime, " +
             "a.create_time as createTime, a.update_time as updateTime, c.name as categoryName, " +
             "ua.nickname as authorNickname, ua.avatar as authorAvatar " +
             "FROM article a " +
@@ -60,7 +60,7 @@ public interface ArticleMapper {
      */
     @Select("SELECT a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage, " +
             "a.category_id as categoryId, a.tags, a.view_count as viewCount, " +
-            "a.is_comment as isComment, a.status, a.publish_time as publishTime, " +
+            "a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime, " +
             "a.create_time as createTime, a.update_time as updateTime, c.name as categoryName, " +
             "ua.nickname as authorNickname, ua.avatar as authorAvatar " +
             "FROM article a " +

@@ -3,9 +3,7 @@ package blog.mapper;
 import blog.entity.ForumPost;
 import blog.vo.ForumPostVO;
 import org.apache.ibatis.annotations.Delete;
-import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
@@ -22,22 +20,24 @@ public interface ForumPostMapper
                                  @Param("keyword") String keyword,
                                  @Param("authorId") Long authorId,
                                  @Param("excludeId") Long excludeId,
-                                 @Param("featuredOnly") Boolean featuredOnly);
+                                 @Param("featuredOnly") Boolean featuredOnly,
+                                 @Param("status") Integer status);
 
     Long countPage(@Param("keyword") String keyword,
                    @Param("authorId") Long authorId,
                    @Param("excludeId") Long excludeId,
-                   @Param("featuredOnly") Boolean featuredOnly);
+                   @Param("featuredOnly") Boolean featuredOnly,
+                   @Param("status") Integer status);
 
-    ForumPostVO selectById(Long id);
+    ForumPostVO selectById(@Param("id") Long id, @Param("status") Integer status);
 
     List<ForumPostVO> selectByAuthorId(@Param("authorId") Long authorId, @Param("limit") int limit);
 
     void updateMeta(ForumPost forumPost);
 
-    @Insert("INSERT INTO forum_post(author_id, title, summary, content, nickname, email, avatar, view_count, is_pinned, is_featured, create_time, update_time, last_activity_time) " +
-            "VALUES(#{authorId}, #{title}, #{summary}, #{content}, #{nickname}, #{email}, #{avatar}, #{viewCount}, #{isPinned}, #{isFeatured}, #{createTime}, #{updateTime}, #{lastActivityTime})")
-    @Options(useGeneratedKeys = true, keyProperty = "id")
+    @Update("UPDATE forum_post SET status = #{status}, update_time = NOW() WHERE id = #{id}")
+    void updateStatus(@Param("id") Long id, @Param("status") Integer status);
+
     void insert(ForumPost forumPost);
 
     @Update("UPDATE forum_post SET view_count = view_count + 1 WHERE id = #{id}")
@@ -52,10 +52,10 @@ public interface ForumPostMapper
     @Select("SELECT COUNT(*) FROM forum_post")
     Long countAll();
 
-    @Select("SELECT COUNT(*) FROM forum_post WHERE is_pinned = TRUE")
+    @Select("SELECT COUNT(*) FROM forum_post WHERE status = 1 AND is_pinned = TRUE")
     Long countPinned();
 
-    @Select("SELECT COUNT(*) FROM forum_post WHERE is_featured = TRUE")
+    @Select("SELECT COUNT(*) FROM forum_post WHERE status = 1 AND is_featured = TRUE")
     Long countFeatured();
 
     @Select("SELECT COUNT(*) FROM forum_post WHERE author_id = #{authorId}")

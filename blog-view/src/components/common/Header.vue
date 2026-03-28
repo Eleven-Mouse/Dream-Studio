@@ -53,28 +53,30 @@
         <el-menu-item index="/archive"
           ><el-icon><WalletFilled /></el-icon>Archive</el-menu-item
         >
+        <el-menu-item index="/resources"
+          ><el-icon><FolderOpened /></el-icon>Resources</el-menu-item
+        >
         <el-menu-item index="/about"
           ><el-icon><UserFilled /></el-icon>About</el-menu-item
         >
       </el-menu>
-      <div class="github-link">
-        <a href="https://github.com/Eleven-Mouse/Dream-Studio" target="_blank">
-          <span>GitHub</span> <el-icon size="15"><Promotion /></el-icon>
-        </a>
-      </div>
+
       <div class="user-entry" @click="goToProfile">
         <el-badge v-if="canViewAdminDashboard" value="Admin" class="user-badge">
-          <el-avatar :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
+          <el-avatar shape="square" :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
         </el-badge>
-        <el-avatar v-else :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
+        <el-avatar v-else shape="square" :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
         <div class="user-meta">
           <span class="user-name">{{ displayName }}</span>
         </div>
       </div>
-      <el-button v-if="isLoggedIn" text class="logout-button" @click.stop="handleLogout"
-        >退出登录</el-button
-      >
+
       <theme-switcher class="theme-switch" />
+      <div class="github-link">
+        <a href="https://github.com/Eleven-Mouse/Dream-Studio" target="_blank">
+          <span><h6>GitHub</h6></span> <el-icon size="15"><Promotion /></el-icon>
+        </a>
+      </div>
     </div>
     <!-- 页面滚动进度条 -->
     <el-progress
@@ -88,7 +90,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCategories } from '@/api/categories'
 import { fetchArticles } from '@/api/article.js'
@@ -102,6 +104,7 @@ import {
   Grid,
   UserFilled,
   WalletFilled,
+  FolderOpened,
   Promotion,
   Comment,
   ChatDotRound,
@@ -374,10 +377,6 @@ const handleLogout = async () => {
   margin-left: 16px;
 }
 
-.logout-button {
-  margin-left: 10px;
-}
-
 .user-entry {
   display: flex;
   align-items: center;
@@ -395,14 +394,19 @@ const handleLogout = async () => {
 
 .user-meta {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 0.8;
 }
 
 .user-name {
+  display: block;
   color: var(--app-text-color);
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-meta small {

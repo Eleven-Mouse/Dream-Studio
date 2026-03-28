@@ -8,6 +8,7 @@ import request from '@/utils/request'
  * @param {number} [params.categoryId] - 分类ID
  * @param {string} [params.category] - 分类名
  * @param {string} [params.keyword] - 关键词
+ * @param {boolean} [params.featuredOnly] - 是否只查询精华文章
  * @param {string} [params.sortBy] - 排序字段
  * @param {string} [params.order] - 排序方式
  */
@@ -72,7 +73,3 @@ export function deleteManagedArticle(id) {
     method: 'delete',
   })
 }
-
-export const createArticle = createManagedArticle
-export const updateArticle = updateManagedArticle
-export const getArticleById = fetchManagedArticleById

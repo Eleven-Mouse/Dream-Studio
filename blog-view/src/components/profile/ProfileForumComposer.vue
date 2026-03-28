@@ -1,68 +1,80 @@
 <template>
-  <section class="forum-manager-card">
-    <div class="manager-copy">
-      <p class="manager-eyebrow">Forum Manager</p>
-    </div>
+  <el-input
+    v-model="form.title"
+    class="composer-title"
+    maxlength="80"
+    placeholder="输入一个清晰的帖子标题"
+    show-word-limit
+  />
 
-    <div class="manager-grid">
-      <div class="composer-panel">
-        <div class="author-card">
-          <el-avatar :size="56" :src="composerAvatar">{{ composerInitial }}</el-avatar>
-          <div>
-            <strong>{{ composerNickname }}</strong>
-            <p>{{ composerDescription }}</p>
-          </div>
-        </div>
+  <el-input
+    v-model="form.summary"
+    class="composer-summary"
+    maxlength="160"
+    placeholder="用一句话概括你的分享内容，便于在列表中快速浏览"
+    show-word-limit
+  />
 
-        <el-input v-model="form.title" class="composer-title" maxlength="80" placeholder="输入一个清晰的帖子标题" show-word-limit />
+  <div class="taxonomy-row">
+    <el-select
+      v-model="form.categoryId"
+      class="taxonomy-select"
+      placeholder="选择分类"
+      clearable
+      filterable
+      :loading="taxonomyLoading"
+      :disabled="taxonomyLoading || !categories.length"
+      no-data-text="暂无可用分类，请联系管理员添加"
+    >
+      <el-option
+        v-for="category in categories"
+        :key="category.id"
+        :label="category.name"
+        :value="category.id"
+      />
+    </el-select>
 
-        <el-input
-          v-model="form.summary"
-          class="composer-summary"
-          maxlength="160"
-          placeholder="用一句话概括你的分享内容，便于在列表中快速浏览"
-          show-word-limit
-        />
+    <el-select
+      v-model="form.tags"
+      class="taxonomy-select"
+      multiple
+      clearable
+      filterable
+      collapse-tags
+      collapse-tags-tooltip
+      placeholder="选择标签"
+      :loading="taxonomyLoading"
+      :disabled="taxonomyLoading || !tagsList.length"
+      no-data-text="暂无可用标签，请联系管理员添加"
+    >
+      <el-option v-for="tag in tagsList" :key="tag.id" :label="tag.name" :value="tag.id" />
+    </el-select>
+  </div>
 
-        <el-input
-          v-model="form.content"
-          class="composer-content"
-          type="textarea"
-          :rows="10"
-          maxlength="4000"
-          resize="vertical"
-          placeholder="写下你的想法、问题或经验，也可以在内容里自然加入标签关键词。"
-          show-word-limit
-        />
+  <el-input
+    v-model="form.content"
+    class="composer-content"
+    type="textarea"
+    :rows="10"
+    maxlength="4000"
+    resize="vertical"
+    placeholder="写下你的想法、问题或经验，也可以在内容里自然加入标签关键词。"
+    show-word-limit
+  />
 
-        <div class="quick-toolbar">
-          <span>快捷片段</span>
-          <button
-            v-for="item in quickInsertOptions"
-            :key="item"
-            type="button"
-            class="quick-chip"
-            @click="quickInsert(item)"
-          >
-            {{ item }}
-          </button>
-        </div>
-
-        <div class="action-row">
-          <el-button :loading="submitting" type="primary" round @click="submitPost">发布帖子</el-button>
-          <el-button round @click="resetDraft">清空内容</el-button>
-        </div>
-      </div>
-
-    </div>
-  </section>
+  <div class="action-row">
+    <el-button :loading="submitting" type="primary" round @click="submitPost">发布帖子</el-button>
+    <el-button round @click="resetDraft">清空内容</el-button>
+  </div>
 </template>
 
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { fetchCategories } from '@/api/categories'
 import { createForumPost } from '@/api/forum'
+import { fetchTags } from '@/api/tags'
 import defaultAvatar from '@/assets/(5).png'
 import { useUserStore } from '@/store/user'
 
@@ -76,18 +88,18 @@ const form = reactive({
   avatar: '',
   title: '',
   summary: '',
+  categoryId: null,
+  tags: [],
   content: '',
 })
+const categories = ref([])
+const tagsList = ref([])
+const taxonomyLoading = ref(false)
 
 const currentProfile = computed(() => userStore.profile || {})
-const composerNickname = computed(() => currentProfile.value.nickname || currentProfile.value.username || 'Dream 用户')
-const composerInitial = computed(() => composerNickname.value.slice(0, 1).toUpperCase())
-const composerAvatar = computed(() => currentProfile.value.avatar || defaultAvatar)
-const composerDescription = computed(() => {
-  return currentProfile.value.bio || '在个人中心整理你的讨论内容，并同步发布到论坛。'
-})
-
-const quickInsertOptions = ['#问题讨论', '#经验分享', '#项目复盘', '#资源推荐']
+const composerNickname = computed(
+  () => currentProfile.value.nickname || currentProfile.value.username || 'Dream 用户',
+)
 
 const syncFormUser = () => {
   form.nickname = currentProfile.value.nickname || currentProfile.value.username || ''
@@ -97,18 +109,12 @@ const syncFormUser = () => {
 
 watch(currentProfile, syncFormUser, { immediate: true, deep: true })
 
-const quickInsert = (snippet) => {
-  form.content = `${form.content}${form.content ? '\n' : ''}${snippet}`
-}
-
 const resetDraft = () => {
   form.title = ''
   form.summary = ''
+  form.categoryId = null
+  form.tags = []
   form.content = ''
-}
-
-const goForum = () => {
-  router.push('/forum')
 }
 
 const submitPost = async () => {
@@ -122,10 +128,18 @@ const submitPost = async () => {
     return
   }
 
+  if (!form.categoryId) {
+    ElMessage.warning('请先选择分类')
+    return
+  }
+
   submitting.value = true
   try {
     syncFormUser()
-    const createdPost = await createForumPost({ ...form })
+    const createdPost = await createForumPost({
+      ...form,
+      tags: form.tags.join(','),
+    })
     const createdPostId = createdPost?.id || createdPost?.data?.id
     resetDraft()
     ElMessage.success('帖子发布成功')
@@ -136,12 +150,26 @@ const submitPost = async () => {
     submitting.value = false
   }
 }
+
+onMounted(async () => {
+  taxonomyLoading.value = true
+  try {
+    const [categoryData, tagData] = await Promise.all([fetchCategories(), fetchTags()])
+    categories.value = Array.isArray(categoryData) ? categoryData : []
+    tagsList.value = Array.isArray(tagData) ? tagData : []
+  } catch (error) {
+    console.error('加载分类或标签失败', error)
+    ElMessage.error('加载分类或标签失败，请稍后重试')
+  } finally {
+    taxonomyLoading.value = false
+  }
+})
 </script>
 
 <style scoped>
 .forum-manager-card {
   padding: 28px;
-  border-radius: 28px;
+  border-radius: 20px;
   background:
     radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
@@ -223,6 +251,26 @@ const submitPost = async () => {
   margin-bottom: 14px;
 }
 
+.taxonomy-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.taxonomy-select {
+  width: 100%;
+}
+
+.taxonomy-help {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: -4px 0 14px;
+  color: #64748b;
+  font-size: 13px;
+}
+
 .quick-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -297,6 +345,10 @@ const submitPost = async () => {
   }
 
   .manager-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .taxonomy-row {
     grid-template-columns: 1fr;
   }
 

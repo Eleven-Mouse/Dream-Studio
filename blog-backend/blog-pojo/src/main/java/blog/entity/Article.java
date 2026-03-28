@@ -64,6 +64,11 @@ public class Article implements Serializable {
     private Integer isComment;
 
     /**
+     * 是否推荐到首页轮播
+     */
+    private Boolean isFeatured;
+
+    /**
      * 状态（0-草稿，1-已发布）
      */
     private Integer status;

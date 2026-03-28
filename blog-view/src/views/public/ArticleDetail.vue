@@ -125,7 +125,7 @@ import { ArrowLeftBold, Collection, PictureRounded } from '@element-plus/icons-v
 import { fetchArticleById } from '@/api/article.js'
 import { fetchCategories } from '@/api/categories'
 import { fetchTags } from '@/api/tags'
-import CommentsCard from '@/components/comments/CommentsCard.vue'
+import CommentsCard from '@/components/CommentsCard.vue'
 import defaultAvatar from '@/assets/(5).png'
 
 import { MdPreview } from 'md-editor-v3'

@@ -20,4 +20,10 @@ public class ForumPostAdminUpdateDTO implements Serializable
     private Boolean isPinned;
 
     private Boolean isFeatured;
+
+    private Integer status;
+
+    private Long categoryId;
+
+    private String tags;
 }

@@ -8,6 +8,7 @@ create table article
     category_id  bigint                             null comment '分类ID',
     view_count   int      default 0                 null comment '浏览次数',
     is_comment   tinyint  default 1                 null comment '是否允许评论：0-否，1-是',
+    is_featured  tinyint  default 0                 null comment '是否推荐到首页轮播',
     status       tinyint  default 1                 null comment '状态：0-草稿，1-已发布，2-已删除',
     publish_time datetime                           null comment '发布时间',
     create_time  datetime default CURRENT_TIMESTAMP null comment '创建时间',
@@ -192,6 +193,36 @@ create index idx_create_time
 create index idx_ip
     on visit_log (ip);
 
+create table site_resource
+(
+    id             bigint auto_increment comment '资源ID'
+        primary key,
+    uploader_id    bigint                             not null comment '上传者用户ID',
+    original_name  varchar(255)                       not null comment '原始文件名',
+    file_url       varchar(1000)                      not null comment '资源访问地址',
+    file_size      bigint   default 0                 not null comment '文件大小',
+    extension      varchar(20)                        not null comment '文件扩展名',
+    category_key   varchar(30) default 'generic'      not null comment '资源分类键',
+    mime_type      varchar(120)                       null comment 'MIME类型',
+    status         varchar(30) default 'PENDING'      not null comment '审核状态',
+    review_note    varchar(500)                       null comment '审核备注',
+    reviewer_id    bigint                             null comment '审核人用户ID',
+    download_count int      default 0                 not null comment '下载次数',
+    create_time    datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    review_time    datetime                           null comment '审核时间'
+)
+    comment '站点资源表';
+
+create index idx_site_resource_status
+    on site_resource (status, review_time);
+
+create index idx_site_resource_uploader
+    on site_resource (uploader_id, create_time);
+
+create index idx_site_resource_category
+    on site_resource (category_key);
+
 create definer = root@localhost view v_article_stats as
 select `a`.`id`                               AS `article_id`,
        `a`.`title`                            AS `title`,
@@ -209,5 +240,3 @@ from ((((`eleven_blog`.`article` `a` left join `eleven_blog`.`category` `c`
        on ((`a`.`id` = `at`.`article_id`))) left join `eleven_blog`.`tag` `t` on ((`at`.`tag_id` = `t`.`id`)))
 group by `a`.`id`, `a`.`title`, `a`.`view_count`, `a`.`like_count`, `a`.`comment_count`, `c`.`name`, `u`.`nickname`,
          `a`.`publish_time`, `a`.`status`;
-
-

@@ -14,6 +14,8 @@ public interface MomentService
 
     List<MomentVO> listAllMoments();
 
+    List<MomentVO> listPublishedMoments();
+
     List<MomentVO> listMomentsByAuthorId(Long authorId);
 
     void createMoment(MomentDTO momentDTO);

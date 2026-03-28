@@ -5,8 +5,8 @@
         <div class="author-info">
           <el-avatar :size="34" :src="post.authorAvatar || post.avatar || defaultAvatar" />
           <div>
-            <strong>{{ post.authorNickname || post.nickname || '匿名用户' }}</strong>
-            <div class="author-time">{{ formatTime(post.createTime) }} · 社区发布</div>
+            <strong>{{ post.authorNickname || post.nickname }}</strong>
+            <div class="author-time">{{ formatTime(post.createTime) }}</div>
           </div>
         </div>
         <div class="card-badges">
@@ -71,7 +71,10 @@ watch(
 
 const fallbackSummary = computed(() => {
   const content = props.post?.content || ''
-  const plainText = content.replace(/[#>*_~`-]/g, ' ').replace(/\s+/g, ' ').trim()
+  const plainText = content
+    .replace(/[#>*_~`-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
   return plainText.slice(0, 120) || '暂无摘要'
 })
 

@@ -23,6 +23,9 @@ public interface MomentMapper
     @Select("SELECT m.id, m.author_id as authorId, ua.nickname as authorNickname, ua.avatar as authorAvatar, m.content, m.image, m.status, m.publish_time as publishTime, m.create_time as createTime, m.update_time as updateTime, m.view_count as viewCount FROM moment m LEFT JOIN user_account ua ON m.author_id = ua.id ORDER BY COALESCE(m.publish_time, m.create_time) DESC")
     List<MomentVO> selectAll();
 
+    @Select("SELECT m.id, m.author_id as authorId, ua.nickname as authorNickname, ua.avatar as authorAvatar, m.content, m.image, m.status, m.publish_time as publishTime, m.create_time as createTime, m.update_time as updateTime, m.view_count as viewCount FROM moment m LEFT JOIN user_account ua ON m.author_id = ua.id WHERE m.status = 1 ORDER BY COALESCE(m.publish_time, m.create_time) DESC")
+    List<MomentVO> selectPublished();
+
     @Select("SELECT m.id, m.author_id as authorId, ua.nickname as authorNickname, ua.avatar as authorAvatar, m.content, m.image, m.status, m.publish_time as publishTime, m.create_time as createTime, m.update_time as updateTime, m.view_count as viewCount FROM moment m LEFT JOIN user_account ua ON m.author_id = ua.id WHERE m.author_id = #{authorId} ORDER BY COALESCE(m.publish_time, m.create_time) DESC")
     List<MomentVO> selectByAuthorId(Long authorId);
 

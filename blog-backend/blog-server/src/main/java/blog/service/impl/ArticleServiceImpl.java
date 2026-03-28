@@ -76,6 +76,11 @@ public class ArticleServiceImpl implements ArticleService {
             article.setIsComment(1);
         }
 
+        if (article.getIsFeatured() == null)
+        {
+            article.setIsFeatured(false);
+        }
+
         if (article.getStatus() == 1)
         {
             article.setPublishTime(now);
@@ -150,6 +155,12 @@ public class ArticleServiceImpl implements ArticleService {
                     .toList();
         }
 
+        if (Boolean.TRUE.equals(queryDTO.getFeaturedOnly())) {
+            articles = articles.stream()
+                    .filter(article -> Boolean.TRUE.equals(article.getIsFeatured()))
+                    .toList();
+        }
+
         // 提取所有文章中的所有标签ID
         java.util.Set<Long> tagIds = articles.stream()
                 .filter(article -> article.getTags() != null && !article.getTags().trim().isEmpty())
@@ -211,6 +222,7 @@ public class ArticleServiceImpl implements ArticleService {
     {
         log.info("更新文章，ID：{}，标题：{}", id, articleDTO.getTitle());
 
+        ArticleVO existingArticle = articleMapper.selectById(id);
         Article article = new Article();
         copyProperties(articleDTO, article);
         article.setId(id);
@@ -220,7 +232,6 @@ public class ArticleServiceImpl implements ArticleService {
 
         if (article.getStatus() != null && article.getStatus() == 1)
         {
-                ArticleVO existingArticle = articleMapper.selectById(id);
                 if (existingArticle != null && existingArticle.getStatus() != 1)
                 {
                     article.setPublishTime(LocalDateTime.now());
@@ -230,8 +241,12 @@ public class ArticleServiceImpl implements ArticleService {
 
         articleMapper.update(article);
 
+        Integer currentStatus = article.getStatus() != null
+                ? article.getStatus()
+                : existingArticle != null ? existingArticle.getStatus() : null;
+
         log.info("文章更新成功，文章ID：{}，状态：{}", id,
-                article.getStatus() == 1 ? "已发布" : "草稿");
+                getStatusText(currentStatus));
     }
 
     @Override

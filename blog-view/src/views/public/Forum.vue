@@ -20,50 +20,34 @@
             </div>
           </section>
 
-          <div class="left-divider"></div>
-
           <section class="left-section left-section-info">
             <div class="sidebar-title secondary">参与关注</div>
             <div class="left-note">
               论坛页现在专注于浏览、评论、点赞与分享，发帖入口已经迁移到个人中心的独立发帖页。
             </div>
-            <el-button class="left-action-button" round @click="goToProfileManager">去发帖页</el-button>
           </section>
         </div>
       </aside>
 
       <main class="center-content">
-        <section class="feed-toolbar panel-card">
-          <div class="feed-toolbar-row">
-            <div class="section-title">
-              帖子列表
-
-              <button
-                v-for="tag in hotTags"
-                :key="tag.name"
-                type="button"
-                class="topic-chip"
-                @click="applyTagFilter(tag.name)"
-              >
-                #{{ tag.name }}
-              </button>
-              <button v-if="activeTag" type="button" class="clear-chip" @click="activeTag = ''">
-                清除筛选
-              </button>
-            </div>
-
-            <el-button plain round @click="goToProfileManager">去发帖页</el-button>
-          </div>
-        </section>
-
         <div v-if="loading" class="loading-tip">正在加载帖子...</div>
         <div v-else-if="error" class="error-tip">{{ error }}</div>
-        <div v-else-if="filteredPosts.length" class="post-list">
-          <ForumPostCard v-for="post in filteredPosts" :key="post.id" :post="post" />
-        </div>
-        <el-empty v-else description="还没有帖子，去个人中心发帖页发布第一篇讨论">
-          <el-button type="primary" round @click="goToProfileManager">前往发帖页</el-button>
-        </el-empty>
+        <template v-else>
+          <div  class="post-list">
+            <ForumPostCard v-for="post in filteredPosts" :key="post.id" :post="post" />
+          </div>
+     
+
+          <div v-if="pagination.total > pagination.size" class="post-pagination">
+            <el-pagination
+              :current-page="pagination.currentPage"
+              :page-size="pagination.size"
+              :total="pagination.total"
+              layout="total, prev, pager, next"
+              @current-change="handlePageChange"
+            />
+          </div>
+        </template>
       </main>
 
       <aside class="right-sidebar">
@@ -102,13 +86,6 @@
               <div v-else class="empty-tip">等待第一批内容出现</div>
             </section>
 
-            <section class="sidebar-card side-inner-card">
-              <div class="panel-title">本期公告</div>
-              <ul v-if="announcements.length" class="bullet-list">
-                <li v-for="item in announcements" :key="item.id">{{ item.title }}：{{ item.content }}</li>
-              </ul>
-              <div v-else class="empty-tip">暂无公告</div>
-            </section>
           </div>
         </div>
       </aside>
@@ -118,29 +95,49 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import ForumPostCard from '@/components/forum/ForumPostCard.vue'
+import ForumPostCard from '@/components/ForumPostCard.vue'
 import { fetchForumPosts } from '@/api/forum'
-import { fetchSiteAnnouncements } from '@/api/site'
 
-const router = useRouter()
+const PAGE_SIZE = 10
 
 const sort = ref('latest')
 const activeTag = ref('')
 const posts = ref([])
-const announcements = ref([])
+const sidebarPosts = ref([])
 const loading = ref(false)
 const error = ref('')
-const featuredCount = computed(() => posts.value.filter((item) => item.isFeatured).length)
+const pagination = ref({
+  currentPage: 1,
+  total: 0,
+  size: PAGE_SIZE,
+})
+const forumStats = ref({
+  total: 0,
+  featuredCount: 0,
+  pinnedCount: 0,
+})
+const featuredCount = computed(() => Number(forumStats.value.featuredCount || 0))
 
 const extractTags = (post) => {
+  if (Array.isArray(post?.tags)) {
+    return post.tags.map((item) => String(item).trim()).filter(Boolean).slice(0, 6)
+  }
+
+  if (typeof post?.tags === 'string' && post.tags.trim()) {
+    return post.tags
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 6)
+  }
+
   const source = `${post?.title || ''} ${post?.summary || ''} ${post?.content || ''}`
   const matches = source.match(/[A-Za-z][A-Za-z0-9+#.-]{1,18}/g) || []
   return [...new Set(matches.map((item) => item.toLowerCase()))].slice(0, 6)
 }
 
 const hotPosts = computed(() => {
-  return [...posts.value]
+  return [...sidebarPosts.value]
     .sort(
       (a, b) =>
         (b.commentCount || 0) + (b.viewCount || 0) - ((a.commentCount || 0) + (a.viewCount || 0)),
@@ -150,7 +147,7 @@ const hotPosts = computed(() => {
 
 const hotTags = computed(() => {
   const counter = new Map()
-  posts.value.forEach((post) => {
+  sidebarPosts.value.forEach((post) => {
     extractTags(post).forEach((tag) => {
       counter.set(tag, (counter.get(tag) || 0) + 1)
     })
@@ -167,17 +164,36 @@ const filteredPosts = computed(() => {
 })
 
 const leftNavItems = computed(() => [
-  { key: 'latest', label: '最新帖子', count: posts.value.length },
-  { key: 'hot', label: '热门帖子', count: hotPosts.value.length },
+  { key: 'latest', label: '最新帖子', count: pagination.value.total },
+  { key: 'hot', label: '热门帖子', count: pagination.value.total },
   { key: 'featured', label: '精选文章', count: featuredCount.value },
 ])
 
-const loadPosts = async () => {
+const loadPosts = async (page = pagination.value.currentPage) => {
   loading.value = true
   error.value = ''
   try {
-    const response = await fetchForumPosts({ sort: sort.value, page: 1, size: 1000 })
+    const response = await fetchForumPosts({ sort: sort.value, page, size: pagination.value.size })
+    const totalCount = Number(response?.stats?.total || response?.pagination?.total || 0)
+
     posts.value = response?.data || []
+    pagination.value = {
+      ...pagination.value,
+      currentPage: Number(response?.pagination?.currentPage || page),
+      total: Number(response?.pagination?.total || 0),
+      size: Number(response?.pagination?.size || pagination.value.size),
+    }
+    forumStats.value = {
+      total: totalCount,
+      featuredCount: Number(response?.stats?.featuredCount || 0),
+      pinnedCount: Number(response?.stats?.pinnedCount || 0),
+    }
+
+    if (!totalCount) {
+      sidebarPosts.value = []
+    } else if (sidebarPosts.value.length !== totalCount) {
+      void loadSidebarPosts(totalCount)
+    }
   } catch (err) {
     error.value = '获取论坛帖子失败，请稍后重试。'
     console.error(err)
@@ -186,49 +202,63 @@ const loadPosts = async () => {
   }
 }
 
-const loadAnnouncements = async () => {
+const loadSidebarPosts = async (totalHint = forumStats.value.total || pagination.value.total || PAGE_SIZE) => {
+  const safeSize = Math.max(Number(totalHint) || 0, PAGE_SIZE)
+  if (!safeSize) {
+    sidebarPosts.value = []
+    return
+  }
+
   try {
-    const response = await fetchSiteAnnouncements()
-    announcements.value = Array.isArray(response) ? response.slice(0, 5) : []
+    const response = await fetchForumPosts({ sort: 'latest', page: 1, size: safeSize })
+    sidebarPosts.value = response?.data || []
   } catch (err) {
-    console.error('获取站点公告失败', err)
-    announcements.value = []
+    console.error('获取论坛侧栏数据失败', err)
   }
 }
 
 const changeSort = (nextSort) => {
   sort.value = nextSort
   activeTag.value = ''
-  loadPosts()
+  pagination.value.currentPage = 1
+  loadPosts(1)
 }
 
 const applyTagFilter = (tagName) => {
   activeTag.value = tagName
 }
 
-const goToProfileManager = () => {
-  router.push('/profile/forum-publish')
+const handlePageChange = (page) => {
+  loadPosts(page)
+  const scrollContainer = document.querySelector('.main-scroll-container')
+  if (scrollContainer) {
+    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 }
 
 onMounted(() => {
   loadPosts()
-  loadAnnouncements()
 })
 </script>
 
 <style scoped>
 .forum-container {
-  width: min(1380px, calc(100vw - 60px));
-  margin-top: 60px;
+  width: min(1440px, calc(100vw - 48px));
   margin-right: auto;
   animation: fadeIn 0.5s ease-out 0.3s forwards;
   opacity: 0;
-  align-self: flex-start;
-  --forum-left-width: 276px;
-  --forum-right-width: 280px;
-  --forum-gap: 18px;
-  --forum-top-offset: 60px;
-  --forum-primary-height: 300px;
+  align-self: stretch;
+  height: auto;
+  margin-top: calc(var(--forum-layout-offset) * 1);
+  padding-top: var(--forum-sticky-gap);
+  padding-bottom: 32px;
+  box-sizing: border-box;
+
+  --forum-left-width: 332px;
+  --forum-right-width: 236px;
+  --forum-gap: 22px;
+  --forum-layout-offset: 20px;
+  --forum-sticky-gap: 12px;
 }
 
 .forum-shell {
@@ -238,33 +268,37 @@ onMounted(() => {
   align-items: start;
 }
 
+.left-sidebar,
+.center-content,
+.right-sidebar {
+  min-width: 250px;
+}
+
+.left-sidebar,
+.right-sidebar {
+  position: sticky;
+  top: var(--forum-sticky-gap);
+  align-self: start;
+}
+
 .panel-card {
   background: var(--card-bg-color, #fff);
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 20px;
+  border-radius: 10px;
   box-shadow: none;
 }
 
 .right-panel-shell {
-  position: sticky;
-  top: var(--forum-top-offset);
-  height: var(--forum-primary-height);
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .left-panel-shell {
-  position: sticky;
-  top: var(--forum-top-offset);
+  display: flex;
+  flex-direction: column;
   padding: 28px 20px 24px;
-  border-radius: 26px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.9) 100%);
-  box-shadow: 0 18px 40px rgba(148, 163, 184, 0.12);
-  max-height: calc(100vh - var(--forum-top-offset) - 24px);
-  overflow-y: auto;
-}
 
-.right-panel-shell:hover {
-  overflow-y: auto;
+  width: 200px;
 }
 
 .left-panel-shell,
@@ -303,9 +337,14 @@ onMounted(() => {
   margin-top: 20px;
 }
 
+.left-section-info {
+  margin-top: auto;
+}
+
 .left-nav-list {
   display: flex;
   flex-direction: column;
+  width: 100%;
   gap: 10px;
 }
 
@@ -363,13 +402,27 @@ onMounted(() => {
 
 .center-content {
   min-width: 0;
-  width: 85%;
-  justify-self: center;
+  width: min(100%, 780px);
+  justify-self: start;
+  padding-top: 2px;
+  padding-right: 10px;
 }
 
 .feed-toolbar,
 .sidebar-card {
   margin-bottom: 16px;
+}
+
+.post-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 18px;
+}
+
+.post-pagination :deep(.el-pagination) {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
 .right-panel-shell {
@@ -496,13 +549,81 @@ onMounted(() => {
 }
 
 @media screen and (max-width: 1200px) {
+  .forum-container {
+    --forum-left-width: 296px;
+    --forum-gap: 18px;
+    --forum-layout-offset: 0px;
+    height: auto;
+    padding-top: 0;
+  }
+
   .forum-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: var(--forum-left-width) minmax(0, 1fr);
+  }
+
+  .right-sidebar {
+    min-width: unset;
   }
 
   .left-sidebar,
   .right-sidebar {
-    min-width: unset;
+    position: static;
+  }
+
+  .right-panel-shell {
+    position: static;
+    height: auto;
+    overflow: visible;
+  }
+
+  .left-sidebar {
+    grid-row: 1 / span 2;
+  }
+
+  .right-sidebar {
+    grid-column: 2;
+    margin-top: 0;
+    height: auto;
+  }
+
+  .center-content {
+    width: 100%;
+    justify-self: stretch;
+    padding-top: 0;
+    padding-right: 0;
+  }
+
+  .feed-toolbar {
+    margin-top: 16px;
+  }
+
+  .left-panel-shell {
+    height: auto;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .forum-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .forum-container {
+    width: calc(100vw - 24px);
+  }
+
+  .left-sidebar {
+    grid-row: auto;
+    margin-bottom: 16px;
+  }
+
+  .right-sidebar {
+    grid-column: auto;
+    margin-top: 16px;
+  }
+
+  .left-sidebar,
+  .right-sidebar {
+    position: static;
   }
 
   .left-panel-shell,
@@ -510,30 +631,6 @@ onMounted(() => {
     position: static;
     height: auto;
     overflow: visible;
-  }
-
-  .left-panel-shell {
-    max-height: none;
-  }
-
-  .left-sidebar {
-    margin-bottom: 16px;
-  }
-
-  .right-sidebar {
-    margin-top: 16px;
-    height: 700px;
-  }
-
-  .center-content {
-    width: 100%;
-  }
-
-}
-
-@media screen and (max-width: 900px) {
-  .forum-container {
-    width: calc(100vw - 24px);
   }
 
   .left-panel-shell {

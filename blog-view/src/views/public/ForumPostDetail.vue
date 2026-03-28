@@ -11,7 +11,12 @@
               <p class="post-kicker">Forum Thread</p>
 
               <div class="post-badges">
-                <el-tag v-if="post.isPinned" round size="small" effect="plain" class="post-badge pinned-badge"
+                <el-tag
+                  v-if="post.isPinned"
+                  round
+                  size="small"
+                  effect="plain"
+                  class="post-badge pinned-badge"
                   >置顶讨论</el-tag
                 >
                 <el-tag
@@ -24,55 +29,42 @@
                   >精选内容</el-tag
                 >
               </div>
-
-              <h1 class="post-title">{{ post.title }}</h1>
-
-              <p class="post-summary">{{ displaySummary }}</p>
-
               <div class="post-author-row">
                 <div class="author-info">
-                  <el-avatar :size="60" :src="resolvedAvatar">{{ authorInitial }}</el-avatar>
+                  <el-avatar shape="square" :size="60" :src="resolvedAvatar">{{
+                    authorInitial
+                  }}</el-avatar>
                   <div class="author-copy">
                     <strong>{{ resolvedAuthorName }}</strong>
                     <p>发起讨论 · {{ formatTime(post.createTime) }}</p>
                   </div>
                 </div>
-
-                <div class="post-stats-inline">
-                  <span>
-                    <el-icon><View /></el-icon>
-                    {{ post.viewCount || 0 }} 浏览
-                  </span>
-                  <span>
-                    <el-icon><ChatDotRound /></el-icon>
-                    {{ post.commentCount || 0 }} 评论
-                  </span>
-                  <span>
-                    <el-icon><Clock /></el-icon>
-                    最近活跃 {{ formatTime(post.lastActivityTime || post.updateTime || post.createTime) }}
-                  </span>
-                </div>
               </div>
+              <h1 class="post-title">{{ post.title }}</h1>
 
               <div v-if="derivedTags.length" class="post-topic-row">
                 <span class="topic-label">讨论主题</span>
                 <div class="topic-list">
-                  <el-tag v-for="tag in derivedTags" :key="tag" round effect="plain" class="topic-tag">
+                  <el-tag
+                    v-for="tag in derivedTags"
+                    :key="tag"
+                    round
+                    effect="plain"
+                    class="topic-tag"
+                  >
                     #{{ tag }}
                   </el-tag>
                 </div>
               </div>
 
-              <div class="post-action-row">
-                <el-button plain round @click="router.push('/forum')">返回论坛</el-button>
-                <el-button plain round @click="sharePost">
-                  <el-icon><Share /></el-icon>
-                  分享帖子
-                </el-button>
-                <el-button plain round type="warning" @click="reportDialogVisible = true">举报内容</el-button>
+              <div v-if="post.categoryName" class="post-topic-row post-category-row">
+                <span class="topic-label">所属分类</span>
+                <div class="topic-list">
+                  <el-tag round effect="plain" class="topic-tag category-tag">
+                    {{ post.categoryName }}
+                  </el-tag>
+                </div>
               </div>
-
-              <el-divider />
             </div>
 
             <MdPreview
@@ -82,6 +74,7 @@
               :headingId="(index) => `forum-heading-${index}`"
               :markedHeadingId="(index) => `forum-heading-${index}`"
             />
+            <el-divider />
           </el-card>
         </div>
 
@@ -101,7 +94,9 @@
                 </div>
                 <div class="side-info-item">
                   <span>最后活跃</span>
-                  <strong>{{ formatTime(post.lastActivityTime || post.updateTime || post.createTime) }}</strong>
+                  <strong>{{
+                    formatTime(post.lastActivityTime || post.updateTime || post.createTime)
+                  }}</strong>
                 </div>
                 <div class="side-info-item">
                   <span>评论数</span>
@@ -111,19 +106,34 @@
                   <span>浏览量</span>
                   <strong>{{ post.viewCount || 0 }}</strong>
                 </div>
+                <div v-if="post.categoryName" class="side-info-item">
+                  <span>分类</span>
+                  <strong>{{ post.categoryName }}</strong>
+                </div>
 
                 <div v-if="derivedTags.length" class="sidebar-topics">
                   <span class="sidebar-subtitle">关键词</span>
                   <div class="topic-list compact">
-                    <el-tag v-for="tag in derivedTags" :key="`sidebar-${tag}`" round effect="plain" class="topic-tag">
+                    <el-tag
+                      v-for="tag in derivedTags"
+                      :key="`sidebar-${tag}`"
+                      round
+                      effect="plain"
+                      class="topic-tag"
+                    >
                       #{{ tag }}
                     </el-tag>
                   </div>
                 </div>
 
-                <div class="sidebar-actions">
-                  <el-button class="back-btn" @click="router.push('/forum')">返回论坛</el-button>
-                  <el-button class="back-btn" plain @click="sharePost">复制链接</el-button>
+                <div class="post-action-row">
+                  <el-button plain @click="sharePost">
+                    <el-icon><Share /></el-icon>
+                    分享帖子
+                  </el-button>
+                  <el-button plaintype="warning" @click="reportDialogVisible = true"
+                    >举报内容</el-button
+                  >
                 </div>
               </div>
 
@@ -190,7 +200,7 @@ import { ElMessage } from 'element-plus'
 import { ChatDotRound, Clock, Share, View } from '@element-plus/icons-vue'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
-import CommentsCard from '@/components/comments/CommentsCard.vue'
+import CommentsCard from '@/components/CommentsCard.vue'
 import defaultAvatar from '@/assets/(5).png'
 import { fetchForumPostById } from '@/api/forum'
 import { createForumReport } from '@/api/user'
@@ -217,7 +227,9 @@ const resolvedAuthorName = computed(
   () => post.value?.authorNickname || post.value?.nickname || '匿名用户',
 )
 
-const resolvedAvatar = computed(() => post.value?.authorAvatar || post.value?.avatar || defaultAvatar)
+const resolvedAvatar = computed(
+  () => post.value?.authorAvatar || post.value?.avatar || defaultAvatar,
+)
 
 const authorInitial = computed(() => resolvedAuthorName.value.slice(0, 1).toUpperCase() || 'D')
 
@@ -238,6 +250,21 @@ const displaySummary = computed(
 )
 
 const derivedTags = computed(() => {
+  if (Array.isArray(post.value?.tags)) {
+    return post.value.tags
+      .map((item) => String(item).trim())
+      .filter(Boolean)
+      .slice(0, 6)
+  }
+
+  if (typeof post.value?.tags === 'string' && post.value.tags.trim()) {
+    return post.value.tags
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 6)
+  }
+
   const source = `${post.value?.title || ''} ${post.value?.summary || ''} ${post.value?.content || ''}`
   const matches = source.match(/[A-Za-z][A-Za-z0-9+#.-]{1,18}/g) || []
   return [...new Set(matches.map((item) => item.toLowerCase()))].slice(0, 6)
@@ -456,6 +483,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 14px;
+  min-width: 0;
+}
+
+.author-copy {
+  min-width: 0;
 }
 
 .author-copy strong {
@@ -463,6 +495,9 @@ onMounted(async () => {
   color: var(--app-text-color);
   font-size: 16px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .author-copy p {
@@ -527,15 +562,20 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+.category-tag {
+  color: #0f766e;
+  background: rgba(240, 253, 250, 0.92);
+  border-color: rgba(15, 118, 110, 0.18);
+}
+
 .post-action-row {
-  display: flex;
   flex-wrap: wrap;
-  gap: 12px;
   margin-bottom: 6px;
+  margin-top: 15px;
 }
 
 .post-action-row :deep(.el-button) {
-  min-width: 108px;
+  width: 90px;
 }
 
 .sidebar-stack {

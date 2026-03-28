@@ -3,7 +3,10 @@ package blog.service.impl;
 import blog.dto.ForumPostAdminUpdateDTO;
 import blog.dto.ForumPostDTO;
 import blog.entity.ForumPost;
+import blog.entity.Tags;
+import blog.mapper.CategoryMapper;
 import blog.mapper.ForumPostMapper;
+import blog.mapper.TagsMapper;
 import blog.service.ForumPostService;
 import blog.service.UserAccountService;
 import blog.vo.ForumPostVO;
@@ -15,9 +18,12 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +35,12 @@ public class ForumPostServiceImpl implements ForumPostService
     @Autowired
     private ForumPostMapper forumPostMapper;
 
+    @Autowired
+    private CategoryMapper categoryMapper;
+
+    @Autowired
+    private TagsMapper tagsMapper;
+
     @Override
     public Map<String, Object> listPosts(String sort, int page, int size)
     {
@@ -36,8 +48,9 @@ public class ForumPostServiceImpl implements ForumPostService
         int safeSize = Math.max(size, 1);
         int offset = (safePage - 1) * safeSize;
 
-        List<ForumPostVO> posts = forumPostMapper.selectPage(normalizeSort(sort), offset, safeSize, null, null, null, false);
-        Long total = forumPostMapper.countPage(null, null, null, false);
+        List<ForumPostVO> posts = forumPostMapper.selectPage(normalizeSort(sort), offset, safeSize, null, null, null, false, 1);
+        attachTagNames(posts);
+        Long total = forumPostMapper.countPage(null, null, null, false, 1);
 
         Map<String, Object> result = new HashMap<>();
         result.put("data", posts);
@@ -50,19 +63,23 @@ public class ForumPostServiceImpl implements ForumPostService
     @Transactional
     public ForumPostVO getPostById(Long id)
     {
-        ForumPostVO forumPost = forumPostMapper.selectById(id);
+        ForumPostVO forumPost = forumPostMapper.selectById(id, 1);
         if (forumPost == null) {
             return null;
         }
 
         forumPostMapper.incrementViewCount(id);
-        return forumPostMapper.selectById(id);
+        ForumPostVO latestPost = forumPostMapper.selectById(id, 1);
+        attachTagNames(latestPost);
+        return latestPost;
     }
 
     @Override
     public ForumPostVO findPostById(Long id)
     {
-        return forumPostMapper.selectById(id);
+        ForumPostVO forumPost = forumPostMapper.selectById(id, null);
+        attachTagNames(forumPost);
+        return forumPost;
     }
 
     @Override
@@ -77,10 +94,13 @@ public class ForumPostServiceImpl implements ForumPostService
         forumPost.setTitle(forumPostDTO.getTitle().trim());
         forumPost.setSummary(buildSummary(forumPostDTO));
         forumPost.setContent(forumPostDTO.getContent().trim());
+        forumPost.setCategoryId(forumPostDTO.getCategoryId());
+        forumPost.setTags(normalizeTagIds(forumPostDTO.getTags()));
         forumPost.setNickname(forumPostDTO.getNickname().trim());
         forumPost.setEmail(trimToNull(forumPostDTO.getEmail()));
         forumPost.setAvatar(trimToNull(forumPostDTO.getAvatar()));
         forumPost.setViewCount(0);
+        forumPost.setStatus(1);
         forumPost.setIsPinned(Boolean.FALSE);
         forumPost.setIsFeatured(Boolean.FALSE);
         forumPost.setCreateTime(now);
@@ -89,7 +109,9 @@ public class ForumPostServiceImpl implements ForumPostService
 
         forumPostMapper.insert(forumPost);
         log.info("论坛帖子发布成功，ID：{}", forumPost.getId());
-        return forumPostMapper.selectById(forumPost.getId());
+        ForumPostVO createdPost = forumPostMapper.selectById(forumPost.getId(), null);
+        attachTagNames(createdPost);
+        return createdPost;
     }
 
     @Override
@@ -97,12 +119,15 @@ public class ForumPostServiceImpl implements ForumPostService
     {
         int safeLimit = Math.max(limit, 1);
 
-        List<ForumPostVO> latest = forumPostMapper.selectPage("latest", 0, safeLimit, null, null, currentPostId, false);
-        List<ForumPostVO> recommendations = forumPostMapper.selectPage("featured", 0, safeLimit, null, null, currentPostId, true);
+        List<ForumPostVO> latest = forumPostMapper.selectPage("latest", 0, safeLimit, null, null, currentPostId, false, 1);
+        List<ForumPostVO> recommendations = forumPostMapper.selectPage("featured", 0, safeLimit, null, null, currentPostId, true, 1);
+        attachTagNames(latest);
+        attachTagNames(recommendations);
 
         if (recommendations.size() < safeLimit) {
             List<Long> existingIds = recommendations.stream().map(ForumPostVO::getId).collect(Collectors.toList());
-            List<ForumPostVO> hotPosts = forumPostMapper.selectPage("hot", 0, safeLimit * 2, null, null, currentPostId, false);
+            List<ForumPostVO> hotPosts = forumPostMapper.selectPage("hot", 0, safeLimit * 2, null, null, currentPostId, false, 1);
+            attachTagNames(hotPosts);
             for (ForumPostVO hotPost : hotPosts) {
                 if (recommendations.size() >= safeLimit) {
                     break;
@@ -127,8 +152,9 @@ public class ForumPostServiceImpl implements ForumPostService
         int safeSize = Math.max(size, 1);
         int offset = (safePage - 1) * safeSize;
 
-        List<ForumPostVO> posts = forumPostMapper.selectPage("latest", offset, safeSize, trimToNull(keyword), authorId, null, false);
-        Long total = forumPostMapper.countPage(trimToNull(keyword), authorId, null, false);
+        List<ForumPostVO> posts = forumPostMapper.selectPage("latest", offset, safeSize, trimToNull(keyword), authorId, null, false, null);
+        attachTagNames(posts);
+        Long total = forumPostMapper.countPage(trimToNull(keyword), authorId, null, false, null);
 
         Map<String, Object> result = new HashMap<>();
         result.put("data", posts);
@@ -140,23 +166,43 @@ public class ForumPostServiceImpl implements ForumPostService
     @Transactional
     public void updateAdminPostMeta(Long id, ForumPostAdminUpdateDTO updateDTO)
     {
-        ForumPostVO existingPost = forumPostMapper.selectById(id);
+        ForumPostVO existingPost = forumPostMapper.selectById(id, null);
         if (existingPost == null) {
             throw new IllegalArgumentException("帖子不存在");
+        }
+        if (updateDTO == null) {
+            throw new IllegalArgumentException("更新内容不能为空");
         }
 
         ForumPost forumPost = new ForumPost();
         forumPost.setId(id);
-        forumPost.setIsPinned(updateDTO.getIsPinned());
-        forumPost.setIsFeatured(updateDTO.getIsFeatured());
+        forumPost.setIsPinned(Boolean.TRUE.equals(updateDTO.getIsPinned()));
+        forumPost.setIsFeatured(Boolean.TRUE.equals(updateDTO.getIsFeatured()));
+        forumPost.setCategoryId(validateAdminCategory(updateDTO.getCategoryId()));
+        forumPost.setTags(normalizeTagIds(updateDTO.getTags()));
         forumPostMapper.updateMeta(forumPost);
+    }
+
+    @Override
+    @Transactional
+    public void updatePostStatus(Long id, Integer status)
+    {
+        ForumPostVO existingPost = forumPostMapper.selectById(id, null);
+        if (existingPost == null) {
+            throw new IllegalArgumentException("帖子不存在");
+        }
+        if (status == null || (status != 0 && status != 1)) {
+            throw new IllegalArgumentException("帖子状态无效");
+        }
+
+        forumPostMapper.updateStatus(id, status);
     }
 
     @Override
     @Transactional
     public void deletePost(Long id)
     {
-        ForumPostVO existingPost = forumPostMapper.selectById(id);
+        ForumPostVO existingPost = forumPostMapper.selectById(id, null);
         if (existingPost == null) {
             throw new IllegalArgumentException("帖子不存在");
         }
@@ -206,6 +252,12 @@ public class ForumPostServiceImpl implements ForumPostService
         if (!StringUtils.hasText(forumPostDTO.getContent())) {
             throw new IllegalArgumentException("正文不能为空");
         }
+        if (forumPostDTO.getCategoryId() == null) {
+            throw new IllegalArgumentException("请选择分类");
+        }
+        if (categoryMapper.countById(forumPostDTO.getCategoryId()) <= 0) {
+            throw new IllegalArgumentException("所选分类不存在");
+        }
 
         if (forumPostDTO.getNickname().trim().length() > 50) {
             throw new IllegalArgumentException("昵称不能超过50字符");
@@ -219,6 +271,8 @@ public class ForumPostServiceImpl implements ForumPostService
         if (forumPostDTO.getContent().trim().length() > 20000) {
             throw new IllegalArgumentException("正文不能超过20000字符");
         }
+
+        normalizeTagIds(forumPostDTO.getTags());
     }
 
     private String buildSummary(ForumPostDTO forumPostDTO)
@@ -253,6 +307,101 @@ public class ForumPostServiceImpl implements ForumPostService
             return null;
         }
         return value.trim();
+    }
+
+    private Long validateAdminCategory(Long categoryId)
+    {
+        if (categoryId == null) {
+            return null;
+        }
+        if (categoryMapper.countById(categoryId) <= 0) {
+            throw new IllegalArgumentException("所选分类不存在");
+        }
+        return categoryId;
+    }
+
+    private String normalizeTagIds(String rawTags)
+    {
+        if (!StringUtils.hasText(rawTags)) {
+            return null;
+        }
+
+        Set<Long> tagIds = Arrays.stream(rawTags.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(this::parseTagId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (tagIds.isEmpty()) {
+            return null;
+        }
+
+        List<Long> normalizedTagIds = new ArrayList<>(tagIds);
+        List<Tags> existingTags = tagsMapper.selectByIds(normalizedTagIds);
+        if (existingTags.size() != normalizedTagIds.size()) {
+            throw new IllegalArgumentException("所选标签不存在");
+        }
+
+        return normalizedTagIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    private Long parseTagId(String value)
+    {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("标签参数无效");
+        }
+    }
+
+    private void attachTagNames(ForumPostVO post)
+    {
+        if (post == null) {
+            return;
+        }
+        List<ForumPostVO> singlePost = new ArrayList<>();
+        singlePost.add(post);
+        attachTagNames(singlePost);
+    }
+
+    private void attachTagNames(List<ForumPostVO> posts)
+    {
+        if (posts == null || posts.isEmpty()) {
+            return;
+        }
+
+        Set<Long> tagIds = posts.stream()
+                .map(ForumPostVO::getTagIds)
+                .filter(StringUtils::hasText)
+                .flatMap(tags -> Arrays.stream(tags.split(",")))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(this::parseTagId)
+                .collect(Collectors.toSet());
+
+        if (tagIds.isEmpty()) {
+            posts.forEach(post -> post.setTags(null));
+            return;
+        }
+
+        Map<Long, String> tagNameMap = tagsMapper.selectByIds(new ArrayList<>(tagIds)).stream()
+                .collect(Collectors.toMap(Tags::getId, Tags::getName));
+
+        posts.forEach(post -> {
+            if (!StringUtils.hasText(post.getTagIds())) {
+                post.setTags(null);
+                return;
+            }
+
+            String resolvedTags = Arrays.stream(post.getTagIds().split(","))
+                    .map(String::trim)
+                    .filter(StringUtils::hasText)
+                    .map(this::parseTagId)
+                    .map(tagNameMap::get)
+                    .filter(StringUtils::hasText)
+                    .collect(Collectors.joining(","));
+            post.setTags(StringUtils.hasText(resolvedTags) ? resolvedTags : null);
+        });
     }
 
     private Map<String, Object> buildPagination(int page, int size, Long total)

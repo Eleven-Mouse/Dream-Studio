@@ -169,29 +169,3 @@ export function deleteAdminMoment(id) {
     method: 'delete',
   })
 }
-
-export function fetchAdminForumPosts(params) {
-  return request({
-    baseURL: '',
-    url: '/admin/forum/posts',
-    method: 'get',
-    params,
-  })
-}
-
-export function updateAdminForumPostMeta(id, data) {
-  return request({
-    baseURL: '',
-    url: `/admin/forum/posts/${id}`,
-    method: 'put',
-    data,
-  })
-}
-
-export function deleteManagedForumPost(id) {
-  return request({
-    baseURL: '',
-    url: `/admin/forum/posts/${id}`,
-    method: 'delete',
-  })
-}

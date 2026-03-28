@@ -61,6 +61,7 @@ public class UserAccountInitializer implements CommandLineRunner
                       email VARCHAR(200) DEFAULT NULL COMMENT '邮箱',
                       avatar VARCHAR(500) DEFAULT NULL COMMENT '头像地址',
                       view_count INT NOT NULL DEFAULT 0 COMMENT '浏览次数',
+                      status TINYINT NOT NULL DEFAULT '1' COMMENT '状态：0-隐藏，1-公开',
                       is_pinned TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否置顶',
                       is_featured TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否加精',
                       create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -83,6 +84,7 @@ public class UserAccountInitializer implements CommandLineRunner
                       reason VARCHAR(50) NOT NULL COMMENT '举报原因',
                       detail VARCHAR(500) DEFAULT NULL COMMENT '补充说明',
                       status VARCHAR(30) NOT NULL DEFAULT 'PENDING' COMMENT '处理状态',
+                      target_action VARCHAR(30) NOT NULL DEFAULT 'NONE' COMMENT '处理动作',
                       reviewer_id BIGINT DEFAULT NULL COMMENT '处理人用户ID',
                       reviewer_note VARCHAR(500) DEFAULT NULL COMMENT '处理备注',
                       create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -142,9 +144,36 @@ public class UserAccountInitializer implements CommandLineRunner
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表'
                     """);
 
+            jdbcTemplate.execute("""
+                    CREATE TABLE IF NOT EXISTS site_resource (
+                      id BIGINT NOT NULL AUTO_INCREMENT COMMENT '资源ID',
+                      uploader_id BIGINT NOT NULL COMMENT '上传者用户ID',
+                      original_name VARCHAR(255) NOT NULL COMMENT '原始文件名',
+                      file_url VARCHAR(1000) NOT NULL COMMENT '资源访问地址',
+                      file_size BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小',
+                      extension VARCHAR(20) NOT NULL COMMENT '文件扩展名',
+                      category_key VARCHAR(30) NOT NULL DEFAULT 'generic' COMMENT '资源分类键',
+                      mime_type VARCHAR(120) DEFAULT NULL COMMENT 'MIME 类型',
+                      status VARCHAR(30) NOT NULL DEFAULT 'PENDING' COMMENT '审核状态',
+                      review_note VARCHAR(500) DEFAULT NULL COMMENT '审核备注',
+                      reviewer_id BIGINT DEFAULT NULL COMMENT '审核人用户ID',
+                      download_count INT NOT NULL DEFAULT 0 COMMENT '下载次数',
+                      create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                      update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                      review_time DATETIME DEFAULT NULL COMMENT '审核时间',
+                      PRIMARY KEY (id),
+                      KEY idx_site_resource_status (status, review_time),
+                      KEY idx_site_resource_uploader (uploader_id, create_time),
+                      KEY idx_site_resource_category (category_key)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站点资源表'
+                    """);
+
             ensureColumnExists("article", "author_id", "ALTER TABLE article ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
+            ensureColumnExists("article", "is_featured", "ALTER TABLE article ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT '0' COMMENT '是否推荐到首页轮播' AFTER is_comment");
             ensureColumnExists("moment", "author_id", "ALTER TABLE moment ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
             ensureColumnExists("forum_post", "author_id", "ALTER TABLE forum_post ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
+            ensureColumnExists("forum_post", "status", "ALTER TABLE forum_post ADD COLUMN status TINYINT NOT NULL DEFAULT '1' COMMENT '状态：0-隐藏，1-公开' AFTER view_count");
+            ensureColumnExists("forum_report", "target_action", "ALTER TABLE forum_report ADD COLUMN target_action VARCHAR(30) NOT NULL DEFAULT 'NONE' COMMENT '处理动作' AFTER status");
             ensureColumnExists("comment", "user_id", "ALTER TABLE comment ADD COLUMN user_id BIGINT DEFAULT NULL COMMENT '评论用户ID' AFTER id");
             ensureColumnExists("user_account", "phone", "ALTER TABLE user_account ADD COLUMN phone VARCHAR(30) DEFAULT NULL COMMENT '手机号' AFTER email");
 

@@ -1,372 +1,668 @@
 <template>
   <div class="resources-page">
-    <div class="notice-strip">
-      <span class="notice-label">站点播报</span>
-      <div class="notice-track">
-        <span>{{ noticeText }}</span>
-      </div>
-    </div>
-
-    <section class="hero-panel">
-      <div class="hero-copy">
-        <p class="hero-kicker">Dream Studio Resource Deck</p>
-        <h1>资源中心</h1>
-        <p class="hero-description">
-          这里继续沿用现有后端上传接口，上传后立即拿到静态资源地址。现在页面已经补上资源分类、下载次数、上传者信息和时间排序交互，便于把上传结果组织成真正可用的资源页。
-        </p>
-
-        <div class="hero-metrics">
-          <div class="metric-item">
-            <strong>{{ resources.length }}</strong>
-            <span>资源总数</span>
-          </div>
-          <div class="metric-item">
-            <strong>{{ categoryCount }}</strong>
-            <span>资源分类</span>
-          </div>
-          <div class="metric-item">
-            <strong>{{ totalDownloadCount }}</strong>
-            <span>累计下载</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="hero-tools">
-        <div class="search-shell">
-          <el-icon class="search-icon"><Search /></el-icon>
-          <input
-            v-model.trim="searchKeyword"
-            type="text"
-            class="search-input"
-            placeholder="搜索资源名、后缀、上传者或 MIME 类型..."
-          />
+    <div class="resources-shell">
+      <section class="hero-panel">
+        <div class="hero-copy">
+          <h2>上传资源</h2>
         </div>
 
-        <div class="hero-actions">
-          <button
-            type="button"
-            class="upload-button"
-            :disabled="uploading"
-            @click="openFilePicker"
-          >
+        <div class="hero-tools">
+          <label class="hero-search-shell">
+            <el-icon class="hero-search-icon"><Search /></el-icon>
+            <input
+              v-model.trim="searchKeyword"
+              type="text"
+              class="hero-search-input"
+              placeholder="搜索资源名称、扩展名、上传人..."
+            />
+          </label>
+
+          <button type="button" class="upload-button" :disabled="uploading" @click="openFilePicker">
             <el-icon><UploadFilled /></el-icon>
-            <span>{{ uploading ? '上传处理中' : '上传资源' }}</span>
+            <span>{{ uploading ? '上传中...' : canUpload ? '上传资源' : '登录后上传' }}</span>
           </button>
+
           <input
-            ref="fileInput"
+            ref="fileInputRef"
             class="native-file-input"
             type="file"
-            accept=".jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,image/*"
+            :accept="acceptTypes"
             multiple
             @change="handleFileSelection"
           />
-        </div>
 
-        <p class="upload-hint">
-          当前接入 <code>POST /admin/upload/images</code>，以 <code>multipart/form-data</code>
-          提交 <code>file</code> 字段，后端成功后返回 <code>Result&lt;String&gt;</code>，资源地址落在
-          对象存储公开地址或 <code>/images/**</code>。当前后端只接受常见图片格式，且单文件不能超过 10MB。
-        </p>
-
-        <div v-if="uploading" class="progress-card">
-          <div class="progress-head">
-            <span>{{ uploadStatusText || '正在上传资源...' }}</span>
-            <strong>{{ uploadProgress }}%</strong>
+          <div
+            class="drop-zone"
+            :class="{ active: isDragActive, disabled: uploading || !canUpload }"
+            @dragenter.prevent="handleDragEnter"
+            @dragover.prevent="handleDragOver"
+            @dragleave.prevent="handleDragLeave"
+            @drop.prevent="handleDrop"
+          >
+            <el-icon class="drop-zone-icon"><UploadFilled /></el-icon>
+            <div class="drop-zone-copy">
+              <strong>{{ uploading ? '资源上传中...' : '拖拽资源到这里即可上传' }}</strong>
+              <span>
+                支持 {{ supportedFormatLabelsText }}，单文件不超过 {{ maxUploadSizeText }}。
+                {{ canUpload ? '普通用户上传后将进入待审核列表。' : '登录后即可上传资源。' }}
+              </span>
+            </div>
           </div>
-          <div class="progress-bar">
-            <span class="progress-fill" :style="{ width: `${uploadProgress}%` }"></span>
+
+          <div v-if="uploading || uploadStatusText" class="upload-progress-card">
+            <div class="upload-progress-head">
+              <span>{{ uploadStatusText || '正在上传资源...' }}</span>
+              <strong>{{ uploadProgress }}%</strong>
+            </div>
+            <div class="upload-progress-bar">
+              <span class="upload-progress-fill" :style="{ width: `${uploadProgress}%` }"></span>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section class="resource-panel">
-      <div class="panel-header">
-        <div class="panel-copy">
-          <p class="panel-kicker">Upload Result</p>
-          <h2>资源列表</h2>
-          <p class="panel-description">
-            当前后端已经提供真实的图片资源上传和删除接口，页面会直接调用这些接口；列表维度暂时仍然基于本地缓存记录组织，因此分类筛选、下载统计、上传者展示和时间排序会围绕这些真实上传结果展开。
-          </p>
-        </div>
-
-        <div class="summary-strip">
-          <div class="summary-chip">
-            <span>本地缓存体积</span>
+        <div class="hero-stats">
+          <div class="hero-stat-card">
+            <strong>{{ publicResources.length }}</strong>
+            <span>已展示资源</span>
+          </div>
+          <div class="hero-stat-card">
+            <strong>{{ totalDownloads }}</strong>
+            <span>累计下载</span>
+          </div>
+          <div class="hero-stat-card">
             <strong>{{ totalResourceSize }}</strong>
+            <span>资源体量</span>
           </div>
-          <div class="summary-chip">
-            <span>最近上传</span>
-            <strong>{{ latestUploadLabel }}</strong>
+          <div class="hero-stat-card" v-if="canUpload">
+            <strong>{{ myPendingCount }}</strong>
+            <span>我的待审核</span>
           </div>
-          <div class="summary-chip">
-            <span>当前上传者</span>
-            <strong>{{ currentUploaderName }}</strong>
+          <div class="hero-stat-card" v-if="isAdmin">
+            <strong>{{ adminPendingCount }}</strong>
+            <span>待管理员处理</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="toolbar-grid">
-        <div class="toolbar-card">
-          <div class="toolbar-head">
-            <span class="toolbar-label">资源分类</span>
-            <small>按类型筛选当前资源</small>
+      <section v-if="canUpload" class="resource-board status-board">
+        <div class="board-header">
+          <div>
+            <h2>我的上传</h2>
+            <p>这里可以查看我上传的资源审核状态和处理备注。</p>
           </div>
-          <div class="filter-group">
+          <button
+            type="button"
+            class="text-button"
+            :disabled="mineLoading"
+            @click="loadMyResources"
+          >
+            刷新
+          </button>
+        </div>
+
+        <div class="board-summary">
+          <div class="summary-card">
+            <span>待审核</span>
+            <strong>{{ myPendingCount }}</strong>
+          </div>
+          <div class="summary-card">
+            <span>已通过</span>
+            <strong>{{ myApprovedCount }}</strong>
+          </div>
+          <div class="summary-card">
+            <span>未通过</span>
+            <strong>{{ myRejectedCount }}</strong>
+          </div>
+        </div>
+
+        <div v-if="myResources.length" class="resource-grid compact-grid">
+          <article
+            v-for="resource in myResources"
+            :key="`mine-${resource.id}`"
+            class="resource-card compact-card"
+          >
+            <div class="resource-card-top">
+              <div
+                class="resource-preview-frame compact-preview"
+                :class="`is-${resource.categoryKey}`"
+              >
+                <img
+                  v-if="resource.isPreviewable"
+                  class="resource-preview"
+                  :src="resource.fileUrl"
+                  :alt="resource.originalName"
+                  loading="lazy"
+                />
+                <div
+                  v-else
+                  class="resource-icon compact-icon"
+                  :class="`is-${resource.categoryKey}`"
+                >
+                  <el-icon><component :is="resolveFileIcon(resource.extension)" /></el-icon>
+                </div>
+              </div>
+            </div>
+
+            <div class="resource-card-body compact-body">
+              <div class="card-head-row">
+                <h3 class="resource-name left-align">{{ resource.originalName }}</h3>
+                <span class="resource-status" :class="`is-${resource.statusKey}`">{{
+                  resource.statusLabel
+                }}</span>
+              </div>
+              <div class="resource-tags left-align-tags">
+                <span class="resource-badge secondary">{{ resource.extensionLabel }}</span>
+              </div>
+              <p class="review-note-block">
+                {{ resource.reviewNote || resolveDefaultReviewNote(resource.statusKey) }}
+              </p>
+            </div>
+
+            <div class="resource-card-footer compact-footer">
+              <div class="resource-owner">
+                <el-avatar :size="30" :src="resource.uploaderAvatar">{{
+                  resource.uploaderInitial
+                }}</el-avatar>
+                <span>{{ resource.uploadedDateLabel }}</span>
+              </div>
+              <div class="resource-actions">
+                <button type="button" class="card-action ghost" @click="copyResourceLink(resource)">
+                  <el-icon><Link /></el-icon>
+                </button>
+                <button
+                  type="button"
+                  class="card-action ghost danger"
+                  :disabled="isRemoving(resource.id)"
+                  @click="removeResource(resource)"
+                >
+                  <el-icon><Delete /></el-icon>
+                </button>
+                <button
+                  v-if="resource.statusKey === 'approved'"
+                  type="button"
+                  class="card-action primary"
+                  @click="openResource(resource)"
+                >
+                  查看
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <el-empty v-else :image-size="72" description="你还没有上传过资源" />
+      </section>
+
+      <section v-if="isAdmin" class="resource-board moderation-board">
+        <div class="board-header">
+          <div>
+            <h2>资源审核</h2>
+          </div>
+          <div class="toolbar-group sort-group">
             <button
-              v-for="filter in resourceFilters"
-              :key="filter.key"
+              v-for="item in reviewFilterOptions"
+              :key="item.value"
               type="button"
-              class="filter-chip"
-              :class="{ active: activeFilter === filter.key }"
-              @click="activeFilter = filter.key"
+              class="toolbar-chip sort-chip"
+              :class="{ active: reviewStatusFilter === item.value }"
+              @click="reviewStatusFilter = item.value"
             >
-              <span>{{ filter.label }}</span>
-              <em>{{ filter.count }}</em>
+              {{ item.label }}
             </button>
           </div>
         </div>
 
-        <div class="toolbar-card">
-          <div class="toolbar-head">
-            <span class="toolbar-label">时间排序</span>
-            <small>结合下载量和名称切换排序方式</small>
-          </div>
-          <div class="sort-group">
-            <button
-              v-for="option in sortOptions"
-              :key="option.value"
-              type="button"
-              class="sort-chip"
-              :class="{ active: sortMode === option.value }"
-              @click="sortMode = option.value"
-            >
-              {{ option.label }}
-            </button>
-          </div>
+        <div v-if="adminResources.length" class="review-list">
+          <article
+            v-for="resource in adminResources"
+            :key="`review-${resource.id}`"
+            class="review-card"
+          >
+            <div class="review-card-main">
+              <div class="card-head-row review-title-row">
+                <strong>{{ resource.originalName }}</strong>
+                <span class="resource-status" :class="`is-${resource.statusKey}`">{{
+                  resource.statusLabel
+                }}</span>
+              </div>
+              <p class="review-meta">
+                上传人：{{ resource.uploaderName }} · 分类：{{ resource.categoryLabel }} · 大小：{{
+                  resource.fileSizeFormatted
+                }}
+              </p>
+              <p class="review-meta">
+                上传时间：{{ resource.uploadedAt }}
+                <span v-if="resource.reviewerName"> · 审核人：{{ resource.reviewerName }}</span>
+              </p>
+              <p class="review-note-block admin-note">
+                {{ resource.reviewNote || resolveDefaultReviewNote(resource.statusKey) }}
+              </p>
+            </div>
+
+            <div class="review-card-actions">
+              <button type="button" class="card-action ghost" @click="copyResourceLink(resource)">
+                <el-icon><Link /></el-icon>
+              </button>
+              <button
+                type="button"
+                class="card-action ghost"
+                @click="openResourcePreview(resource)"
+              >
+                预览
+              </button>
+              <button
+                v-if="resource.statusKey !== 'approved'"
+                type="button"
+                class="card-action approve"
+                :disabled="reviewingIds.includes(resource.id)"
+                @click="approveResource(resource)"
+              >
+                通过
+              </button>
+              <button
+                v-if="resource.statusKey !== 'rejected'"
+                type="button"
+                class="card-action reject"
+                :disabled="reviewingIds.includes(resource.id)"
+                @click="rejectResource(resource)"
+              >
+                驳回
+              </button>
+              <button
+                type="button"
+                class="card-action ghost danger"
+                :disabled="isRemoving(resource.id)"
+                @click="removeResource(resource)"
+              >
+                <el-icon><Delete /></el-icon>
+              </button>
+            </div>
+          </article>
         </div>
-      </div>
 
-      <div v-if="resourceSections.length" class="resource-sections">
-        <section v-for="section in resourceSections" :key="section.key" class="resource-section">
-          <div class="section-header">
-            <div>
-              <p class="section-kicker">Category Section</p>
-              <h3>{{ section.label }}</h3>
-            </div>
-            <div class="section-meta">
-              <span>{{ section.count }} 个资源</span>
-              <span>{{ sortModeLabel }}</span>
-            </div>
+        <el-empty v-else :image-size="72" description="当前筛选条件下没有待处理资源" />
+      </section>
+
+      <section class="resource-board public-board">
+        <div class="board-header">
+          <div>
+            <h2>公开资源</h2>
+            <p>仅展示已通过管理员审核的资源。</p>
           </div>
+          <button
+            type="button"
+            class="text-button"
+            :disabled="loading"
+            @click="loadPublicResources"
+          >
+            刷新
+          </button>
+        </div>
 
-          <div class="resource-grid">
-            <article v-for="resource in section.items" :key="resource.id" class="resource-card">
-              <div class="resource-card-head">
-                <div class="resource-icon" :class="`is-${resource.categoryKey}`">
-                  <el-icon>
-                    <component :is="resolveFileIcon(resource.extension)" />
-                  </el-icon>
-                </div>
-
-                <div class="resource-badges">
-                  <span class="resource-category-tag">{{ resource.category }}</span>
-                  <span class="resource-extension-tag">{{ resource.extension.toUpperCase() }}</span>
-                </div>
+        <div v-if="publicSections.length" class="resource-sections">
+          <section v-for="section in publicSections" :key="section.key" class="resource-section">
+            <div class="section-heading">
+              <div class="section-title-pill">
+                <span class="section-title-icon">{{ section.emoji }}</span>
+                <span>{{ section.label }}</span>
               </div>
+            </div>
 
-              <h4>{{ resource.originalName }}</h4>
-              <p class="resource-path">{{ resource.relativeUrl }}</p>
-
-              <div class="resource-meta-grid">
-                <span>
-                  <el-icon><Calendar /></el-icon>
-                  {{ resource.uploadedAt }}
-                </span>
-                <span>
-                  <el-icon><Download /></el-icon>
-                  {{ resource.downloadCount }} 次下载
-                </span>
-                <span>
-                  <el-icon><Clock /></el-icon>
-                  {{ resource.fileSizeFormatted }}
-                </span>
-                <span>
-                  <el-icon><User /></el-icon>
-                  {{ resource.mimeType }}
-                </span>
-              </div>
-
-              <div class="resource-footer">
-                <div class="resource-owner">
-                  <el-avatar :size="42" :src="resource.uploaderAvatar" class="owner-avatar">
-                    {{ resource.uploaderInitial }}
-                  </el-avatar>
-                  <div>
-                    <strong>{{ resource.uploaderName }}</strong>
-                    <small>上传于 {{ resource.uploadedAt }}</small>
+            <div class="resource-grid">
+              <article v-for="resource in section.items" :key="resource.id" class="resource-card">
+                <div class="resource-card-top">
+                  <div class="resource-preview-frame" :class="`is-${resource.categoryKey}`">
+                    <img
+                      v-if="resource.isPreviewable"
+                      class="resource-preview"
+                      :src="resource.fileUrl"
+                      :alt="resource.originalName"
+                      loading="lazy"
+                    />
+                    <div v-else class="resource-icon" :class="`is-${resource.categoryKey}`">
+                      <el-icon><component :is="resolveFileIcon(resource.extension)" /></el-icon>
+                    </div>
                   </div>
                 </div>
 
-                <div class="resource-actions-row">
-                  <button type="button" class="ghost-action" @click="copyResourceLink(resource)">
-                    <el-icon><Link /></el-icon>
-                    <span>复制链接</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="ghost-action danger-action"
-                    :disabled="isRemovingResource(resource.id)"
-                    @click="removeResource(resource)"
-                  >
-                    <el-icon><Delete /></el-icon>
-                    <span>{{ isRemovingResource(resource.id) ? '删除中' : '删除资源' }}</span>
-                  </button>
-                  <button type="button" class="primary-action" @click="downloadResource(resource)">
-                    <el-icon><Download /></el-icon>
-                    <span>下载资源</span>
-                  </button>
+                <div class="resource-card-body">
+                  <h3 class="resource-name">{{ resource.originalName }}</h3>
+
+                  <div class="resource-tags">
+                    <span class="resource-badge secondary">{{ resource.extensionLabel }}</span>
+                  </div>
                 </div>
-              </div>
-            </article>
-          </div>
-        </section>
-      </div>
 
-      <el-empty v-else :description="emptyDescription" class="resource-empty">
-        <button
-          type="button"
-          class="upload-button empty-button"
-          :disabled="uploading"
-          @click="openFilePicker"
-        >
-          <el-icon><UploadFilled /></el-icon>
-          <span>先上传一个资源</span>
-        </button>
-      </el-empty>
-    </section>
+                <div class="resource-card-footer info-footer">
+                  <div class="resource-meta-line">
+                    <span>
+                      <el-icon><Calendar /></el-icon>
+                      {{ resource.uploadedDateLabel }}
+                    </span>
+                    <span>
+                      <el-icon><Download /></el-icon>
+                      {{ resource.downloadCount }}
+                    </span>
+                    <span>
+                      <el-icon><View /></el-icon>
+                      {{ resource.fileSizeFormatted }}
+                    </span>
+                  </div>
+                  <div class="resource-owner-row">
+                    <div class="resource-owner compact-owner">
+                      <el-avatar :size="28" :src="resource.uploaderAvatar">{{
+                        resource.uploaderInitial
+                      }}</el-avatar>
+                      <span>{{ resource.uploaderName }}</span>
+                    </div>
+                    <div class="resource-actions">
+                      <button
+                        type="button"
+                        class="card-action ghost"
+                        @click="copyResourceLink(resource)"
+                      >
+                        <el-icon><Link /></el-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="card-action ghost"
+                        @click="copyMarkdownLink(resource)"
+                      >
+                        <el-icon><Document /></el-icon>
+                      </button>
+                      <button
+                        v-if="canRemoveResource(resource)"
+                        type="button"
+                        class="card-action ghost danger"
+                        :disabled="isRemoving(resource.id)"
+                        @click="removeResource(resource)"
+                      >
+                        <el-icon><Delete /></el-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="card-action primary"
+                        @click="openResource(resource)"
+                      >
+                        查看
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+        </div>
 
-    <section class="api-grid">
-      <article class="api-card">
-        <p class="api-kicker">上传接口</p>
-        <h3><code>POST /admin/upload/images</code></h3>
-        <p>页面上传动作直接调用当前后端接口，继续以接口返回值作为资源地址来源。</p>
-      </article>
-
-      <article class="api-card">
-        <p class="api-kicker">资源统计</p>
-        <h3>分类 + 下载 + 上传者</h3>
-        <p>前端会为上传结果追加资源分类、下载次数和上传者信息，用于构建完整交互。</p>
-      </article>
-
-      <article class="api-card">
-        <p class="api-kicker">排序模式</p>
-        <h3>最新 / 最早 / 热门 / 名称</h3>
-        <p>默认按时间倒序展示，必要时可以按下载次数或名称快速切换浏览视角。</p>
-      </article>
-    </section>
+        <el-empty v-else :image-size="84" :description="emptyDescription" />
+      </section>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { computed, onMounted, ref, watch } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Calendar,
-  Clock,
   Delete,
   Document,
   Download,
   Files,
   FolderOpened,
   Link,
+  Picture,
   Search,
   UploadFilled,
-  User,
+  View,
 } from '@element-plus/icons-vue'
-import { fetchSiteAnnouncements } from '@/api/site'
-import { deleteResourceFile, resolveUploadedResourceUrl, uploadResourceFile } from '@/api/resource'
+import {
+  deleteResourceFile,
+  fetchAdminResources,
+  fetchMyResources,
+  fetchPublicResources,
+  recordResourceDownload,
+  reviewResourceFile,
+  uploadResourceFile,
+} from '@/api/resource'
 import { useUserStore } from '@/store/user'
 
-const LOCAL_RESOURCE_CACHE_KEY = 'dream-studio:resource-uploads'
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024
-const SUPPORTED_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])
+const MAX_RESOURCE_SIZE = 200 * 1024 * 1024
+const SUPPORTED_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'bmp',
+  'svg',
+  'zip',
+  'rar',
+  '7z',
+  'tar',
+  'gz',
+  'exe',
+  'msi',
+  'dmg',
+  'pkg',
+  'pdf',
+  'doc',
+  'docx',
+  'xls',
+  'xlsx',
+  'ppt',
+  'pptx',
+  'txt',
+  'md',
+]
+const PREVIEWABLE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'])
+const categoryMetaMap = {
+  package: { label: '软件安装包', emoji: '🧰' },
+  pdf: { label: 'PDF电子书', emoji: '📕' },
+  document: { label: '文档资料', emoji: '📘' },
+  image: { label: '图片素材', emoji: '🖼' },
+  installer: { label: '安装程序', emoji: '💿' },
+  generic: { label: '其他资源', emoji: '📁' },
+}
+const extensionCategoryMap = {
+  jpg: 'image',
+  jpeg: 'image',
+  png: 'image',
+  gif: 'image',
+  webp: 'image',
+  bmp: 'image',
+  svg: 'image',
+  zip: 'package',
+  rar: 'package',
+  '7z': 'package',
+  tar: 'package',
+  gz: 'package',
+  exe: 'installer',
+  msi: 'installer',
+  dmg: 'installer',
+  pkg: 'installer',
+  pdf: 'pdf',
+  doc: 'document',
+  docx: 'document',
+  xls: 'document',
+  xlsx: 'document',
+  ppt: 'document',
+  pptx: 'document',
+  txt: 'document',
+  md: 'document',
+}
+const categoryOrder = ['package', 'pdf', 'document', 'image', 'installer', 'generic']
 
 const userStore = useUserStore()
-const fileInput = ref(null)
+
+const fileInputRef = ref(null)
 const searchKeyword = ref('')
-const activeFilter = ref('all')
+const activeCategory = ref('all')
 const sortMode = ref('latest')
+const reviewStatusFilter = ref('PENDING')
 const uploading = ref(false)
 const uploadProgress = ref(0)
 const uploadStatusText = ref('')
-const resources = ref([])
-const announcements = ref([])
-const removingResourceIds = ref([])
+const isDragActive = ref(false)
+const loading = ref(false)
+const mineLoading = ref(false)
+const reviewLoading = ref(false)
+const publicResources = ref([])
+const myResources = ref([])
+const adminResources = ref([])
+const removingIds = ref([])
+const reviewingIds = ref([])
 
 const sortOptions = [
   { value: 'latest', label: '最新上传' },
-  { value: 'oldest', label: '最早上传' },
   { value: 'downloads', label: '下载最多' },
   { value: 'name', label: '名称排序' },
 ]
 
-const fileCategoryMap = {
-  zip: '压缩包',
-  rar: '压缩包',
-  '7z': '压缩包',
-  tar: '压缩包',
-  gz: '压缩包',
-  bz2: '压缩包',
-  xz: '压缩包',
-  exe: '安装程序',
-  msi: '安装程序',
-  dmg: '安装程序',
-  pkg: '安装程序',
-  deb: '安装程序',
-  rpm: '安装程序',
-  apk: '安装程序',
-  ipa: '安装程序',
-  pdf: '文档资料',
-  doc: '文档资料',
-  docx: '文档资料',
-  ppt: '文档资料',
-  pptx: '文档资料',
-  xls: '文档资料',
-  xlsx: '文档资料',
-  txt: '文档资料',
-  md: '文档资料',
-  markdown: '文档资料',
-  jpg: '媒体资源',
-  jpeg: '媒体资源',
-  png: '媒体资源',
-  gif: '媒体资源',
-  webp: '媒体资源',
-  svg: '媒体资源',
-  mp4: '媒体资源',
-  mp3: '媒体资源',
-  wav: '媒体资源',
-}
+const reviewFilterOptions = [
+  { value: 'PENDING', label: '待审核' },
+  { value: 'APPROVED', label: '已通过' },
+  { value: 'REJECTED', label: '已驳回' },
+  { value: 'ALL', label: '全部' },
+]
 
-const categoryKeyMap = {
-  压缩包: 'package',
-  安装程序: 'installer',
-  文档资料: 'document',
-  媒体资源: 'media',
-  通用文件: 'generic',
-}
+const canUpload = computed(() => userStore.isLoggedIn)
+const isAdmin = computed(() => userStore.isAdmin)
+const currentUserId = computed(() => Number(userStore.profile?.id || 0) || null)
+const acceptTypes = computed(() => SUPPORTED_EXTENSIONS.map((item) => `.${item}`).join(','))
+const supportedFormatLabelsText = computed(() =>
+  SUPPORTED_EXTENSIONS.map((item) => item.toUpperCase()).join(' / '),
+)
+const maxUploadSizeText = computed(() => formatFileSize(MAX_RESOURCE_SIZE))
+const totalDownloads = computed(() =>
+  publicResources.value.reduce((total, item) => total + Number(item.downloadCount || 0), 0),
+)
+const totalResourceSize = computed(() =>
+  formatFileSize(
+    publicResources.value.reduce((total, item) => total + Number(item.fileSize || 0), 0),
+  ),
+)
+const myPendingCount = computed(
+  () => myResources.value.filter((item) => item.statusKey === 'pending').length,
+)
+const myApprovedCount = computed(
+  () => myResources.value.filter((item) => item.statusKey === 'approved').length,
+)
+const myRejectedCount = computed(
+  () => myResources.value.filter((item) => item.statusKey === 'rejected').length,
+)
+const adminPendingCount = computed(
+  () => adminResources.value.filter((item) => item.statusKey === 'pending').length,
+)
 
-const getFileExtension = (filename = '') => {
-  const lastDotIndex = filename.lastIndexOf('.')
-  if (lastDotIndex < 0 || lastDotIndex === filename.length - 1) {
-    return 'file'
+const categoryOptions = computed(() => {
+  const counts = publicResources.value.reduce((accumulator, item) => {
+    accumulator[item.categoryKey] = (accumulator[item.categoryKey] || 0) + 1
+    return accumulator
+  }, {})
+
+  return [
+    { key: 'all', label: '全部资源', count: publicResources.value.length },
+    ...categoryOrder
+      .filter((key) => counts[key])
+      .map((key) => ({
+        key,
+        label: getCategoryLabel(key),
+        count: counts[key],
+      })),
+  ]
+})
+
+const filteredPublicResources = computed(() => {
+  const keyword = searchKeyword.value.trim().toLowerCase()
+
+  return publicResources.value.filter((item) => {
+    const matchCategory =
+      activeCategory.value === 'all' || item.categoryKey === activeCategory.value
+    const searchableText = [
+      item.originalName,
+      item.extension,
+      item.uploaderName,
+      item.categoryLabel,
+    ]
+      .join(' ')
+      .toLowerCase()
+
+    return matchCategory && (!keyword || searchableText.includes(keyword))
+  })
+})
+
+const sortedPublicResources = computed(() => {
+  const list = [...filteredPublicResources.value]
+
+  switch (sortMode.value) {
+    case 'downloads':
+      return list.sort(
+        (left, right) =>
+          right.downloadCount - left.downloadCount || right.uploadedAtValue - left.uploadedAtValue,
+      )
+    case 'name':
+      return list.sort((left, right) =>
+        left.originalName.localeCompare(right.originalName, 'zh-CN'),
+      )
+    case 'latest':
+    default:
+      return list.sort((left, right) => right.uploadedAtValue - left.uploadedAtValue)
   }
-  return filename.slice(lastDotIndex + 1).toLowerCase()
+})
+
+const publicSections = computed(() => {
+  const groups = new Map()
+
+  sortedPublicResources.value.forEach((item) => {
+    if (!groups.has(item.categoryKey)) {
+      groups.set(item.categoryKey, [])
+    }
+    groups.get(item.categoryKey).push(item)
+  })
+
+  return [...groups.entries()]
+    .sort((left, right) => categoryRank(left[0]) - categoryRank(right[0]))
+    .map(([key, items]) => ({
+      key,
+      label: getCategoryLabel(key),
+      emoji: getCategoryEmoji(key),
+      items,
+    }))
+})
+
+const activeSectionLabel = computed(() => {
+  const target = categoryOptions.value.find((item) => item.key === activeCategory.value)
+  return target?.label || '资源中心'
+})
+
+const activeSectionEmoji = computed(() =>
+  activeCategory.value === 'all' ? '📦' : getCategoryEmoji(activeCategory.value),
+)
+
+const emptyDescription = computed(() => {
+  if (loading.value) return '资源加载中...'
+  if (searchKeyword.value.trim() || activeCategory.value !== 'all')
+    return '当前筛选条件下没有找到资源'
+  return '当前还没有通过审核的资源'
+})
+
+const extractExtension = (filename = '') => {
+  const dotIndex = filename.lastIndexOf('.')
+  if (dotIndex < 0 || dotIndex === filename.length - 1) return 'file'
+  return filename.slice(dotIndex + 1).toLowerCase()
 }
 
-const getCategoryLabel = (extension) => fileCategoryMap[extension] || '通用文件'
+const categoryRank = (key) => {
+  const index = categoryOrder.indexOf(key)
+  return index >= 0 ? index : categoryOrder.length
+}
 
-const getCategoryKey = (category) => categoryKeyMap[category] || 'generic'
+const getCategoryKey = (extension) => extensionCategoryMap[extension] || 'generic'
+const getCategoryLabel = (categoryKey) =>
+  categoryMetaMap[categoryKey]?.label || categoryMetaMap.generic.label
+const getCategoryEmoji = (categoryKey) =>
+  categoryMetaMap[categoryKey]?.emoji || categoryMetaMap.generic.emoji
 
 const formatFileSize = (size = 0) => {
   if (!Number.isFinite(size) || size <= 0) return '0 B'
@@ -383,8 +679,9 @@ const formatFileSize = (size = 0) => {
   return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`
 }
 
-const formatDateTime = (timestamp) =>
-  new Date(timestamp).toLocaleString('zh-CN', {
+const formatDateTime = (value) => {
+  if (!value) return '--'
+  return new Date(value).toLocaleString('zh-CN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -392,313 +689,294 @@ const formatDateTime = (timestamp) =>
     minute: '2-digit',
     hour12: false,
   })
+}
 
-const currentUploaderName = computed(
-  () => userStore.profile?.nickname || userStore.profile?.username || 'Dream 用户',
-)
+const formatDateOnly = (value) => {
+  if (!value) return '--'
+  return new Date(value).toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+}
 
-const currentUploaderAvatar = computed(() => userStore.profile?.avatar || '')
+const resolveStatusLabel = (status) => {
+  const normalized = String(status || '').toUpperCase()
+  if (normalized === 'APPROVED') return '已通过'
+  if (normalized === 'REJECTED') return '未通过'
+  return '待审核'
+}
 
-const currentUploaderInitial = computed(
-  () => currentUploaderName.value?.slice(0, 1)?.toUpperCase() || 'D',
-)
+const resolveStatusKey = (status) => {
+  const normalized = String(status || '').toUpperCase()
+  if (normalized === 'APPROVED') return 'approved'
+  if (normalized === 'REJECTED') return 'rejected'
+  return 'pending'
+}
 
-const normalizeResourceRecord = (record) => {
-  const originalName = record.originalName || record.displayName || '未命名资源'
-  const extension = getFileExtension(originalName)
-  const category = record.category || getCategoryLabel(extension)
-  const relativeUrl = record.relativeUrl || record.filePath || record.fileUrl || ''
-  const uploadedAtValue =
-    Number(record.uploadedAtValue) ||
-    Date.parse(record.uploadedAt || '') ||
-    Date.now()
-  const uploaderName = record.uploaderName || 'Dream 用户'
+const normalizeResource = (item = {}) => {
+  const originalName = item.originalName || '未命名资源'
+  const extension = (item.extension || extractExtension(originalName)).toLowerCase()
+  const categoryKey = item.categoryKey || getCategoryKey(extension)
+  const uploadedAtValue = new Date(
+    item.createTime || item.reviewTime || item.updateTime || Date.now(),
+  ).getTime()
+  const uploaderName = item.uploaderName || 'Dream 用户'
 
   return {
-    id: record.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    originalName,
-    extension,
-    category,
-    categoryKey: record.categoryKey || getCategoryKey(category),
-    fileSize: Number(record.fileSize) || 0,
-    fileSizeFormatted: record.fileSizeFormatted || formatFileSize(Number(record.fileSize) || 0),
-    relativeUrl,
-    fileUrl: resolveUploadedResourceUrl(relativeUrl),
-    mimeType: record.mimeType || 'application/octet-stream',
-    uploadedAtValue,
-    uploadedAt: formatDateTime(uploadedAtValue),
+    id: Number(item.id || 0) || 0,
+    uploaderId: Number(item.uploaderId || 0) || null,
     uploaderName,
-    uploaderAvatar: record.uploaderAvatar || '',
-    uploaderInitial: record.uploaderInitial || uploaderName.slice(0, 1)?.toUpperCase() || 'D',
-    downloadCount: Number(record.downloadCount) || 0,
+    uploaderAvatar: item.uploaderAvatar || '',
+    uploaderInitial: uploaderName.slice(0, 1)?.toUpperCase() || 'D',
+    originalName,
+    fileUrl: item.fileUrl || '',
+    displayUrl: String(item.fileUrl || '').replace(/^https?:\/\//, ''),
+    fileSize: Number(item.fileSize) || 0,
+    fileSizeFormatted: formatFileSize(Number(item.fileSize) || 0),
+    extension,
+    extensionLabel: extension.toUpperCase(),
+    categoryKey,
+    categoryLabel: getCategoryLabel(categoryKey),
+    categoryEmoji: getCategoryEmoji(categoryKey),
+    status: String(item.status || 'PENDING').toUpperCase(),
+    statusLabel: resolveStatusLabel(item.status),
+    statusKey: resolveStatusKey(item.status),
+    reviewNote: item.reviewNote || '',
+    reviewerId: Number(item.reviewerId || 0) || null,
+    reviewerName: item.reviewerName || '',
+    downloadCount: Number(item.downloadCount) || 0,
+    uploadedAtValue,
+    uploadedAt: formatDateTime(item.createTime || item.reviewTime || item.updateTime),
+    uploadedDateLabel: formatDateOnly(item.createTime || item.reviewTime || item.updateTime),
+    isPreviewable: PREVIEWABLE_EXTENSIONS.has(extension),
   }
 }
-
-const persistResources = () => {
-  localStorage.setItem(LOCAL_RESOURCE_CACHE_KEY, JSON.stringify(resources.value.slice(0, 80)))
-}
-
-const restoreResources = () => {
-  try {
-    const cachedValue = localStorage.getItem(LOCAL_RESOURCE_CACHE_KEY)
-    if (!cachedValue) return
-
-    const parsedValue = JSON.parse(cachedValue)
-    if (!Array.isArray(parsedValue)) return
-
-    resources.value = parsedValue.map((item) => normalizeResourceRecord(item))
-  } catch (error) {
-    console.error('恢复资源缓存失败', error)
-    resources.value = []
-  }
-}
-
-const noticeText = computed(() => {
-  if (!announcements.value.length) {
-    return '资源页已接入后端上传接口，当前支持分类筛选、下载统计、上传者信息和时间排序。'
-  }
-
-  return announcements.value
-    .slice(0, 3)
-    .map((item) => `${item.title}：${item.content}`)
-    .join('    ·    ')
-})
-
-const totalResourceSize = computed(() =>
-  formatFileSize(resources.value.reduce((sum, item) => sum + (Number(item.fileSize) || 0), 0)),
-)
-
-const totalDownloadCount = computed(() =>
-  resources.value.reduce((sum, item) => sum + (Number(item.downloadCount) || 0), 0),
-)
-
-const categoryCount = computed(() => new Set(resources.value.map((item) => item.category)).size)
-
-const latestUploadLabel = computed(() => {
-  if (!resources.value.length) return '--'
-
-  const latestItem = [...resources.value].sort((a, b) => b.uploadedAtValue - a.uploadedAtValue)[0]
-  return latestItem?.uploadedAt || '--'
-})
-
-const resourceFilters = computed(() => {
-  const counts = resources.value.reduce((accumulator, item) => {
-    accumulator[item.category] = (accumulator[item.category] || 0) + 1
-    return accumulator
-  }, {})
-
-  return [
-    { key: 'all', label: '全部资源', count: resources.value.length },
-    ...Object.entries(counts)
-      .map(([key, count]) => ({ key, label: key, count }))
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'zh-CN')),
-  ]
-})
-
-const filteredResources = computed(() => {
-  const keyword = searchKeyword.value.trim().toLowerCase()
-
-  return resources.value.filter((item) => {
-    const matchesFilter = activeFilter.value === 'all' || item.category === activeFilter.value
-    const searchableText = [
-      item.originalName,
-      item.extension,
-      item.category,
-      item.mimeType,
-      item.relativeUrl,
-      item.uploaderName,
-    ]
-      .join(' ')
-      .toLowerCase()
-
-    return matchesFilter && (!keyword || searchableText.includes(keyword))
-  })
-})
-
-const sortedResources = computed(() => {
-  const list = [...filteredResources.value]
-
-  switch (sortMode.value) {
-    case 'oldest':
-      return list.sort((a, b) => a.uploadedAtValue - b.uploadedAtValue)
-    case 'downloads':
-      return list.sort(
-        (a, b) =>
-          b.downloadCount - a.downloadCount || b.uploadedAtValue - a.uploadedAtValue,
-      )
-    case 'name':
-      return list.sort((a, b) => a.originalName.localeCompare(b.originalName, 'zh-CN'))
-    case 'latest':
-    default:
-      return list.sort((a, b) => b.uploadedAtValue - a.uploadedAtValue)
-  }
-})
-
-const sortModeLabel = computed(
-  () => sortOptions.find((item) => item.value === sortMode.value)?.label || '最新上传',
-)
-
-const resourceSections = computed(() => {
-  const groupedMap = new Map()
-
-  sortedResources.value.forEach((item) => {
-    if (!groupedMap.has(item.category)) {
-      groupedMap.set(item.category, [])
-    }
-    groupedMap.get(item.category).push(item)
-  })
-
-  return [...groupedMap.entries()].map(([label, items]) => ({
-    key: label,
-    label,
-    count: items.length,
-    items,
-  }))
-})
-
-const emptyDescription = computed(() => {
-  if (searchKeyword.value || activeFilter.value !== 'all') {
-    return '没有找到符合当前筛选条件的资源。'
-  }
-
-  return '还没有资源记录，先通过上传接口添加一个资源吧。'
-})
 
 const resolveFileIcon = (extension) => {
-  const mediaExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'mp4', 'mp3', 'wav']
-  const packageExtensions = ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'exe', 'msi', 'dmg', 'pkg']
-
-  if (mediaExtensions.includes(extension)) return FolderOpened
-  if (packageExtensions.includes(extension)) return Files
-  return Document
+  if (PREVIEWABLE_EXTENSIONS.has(extension)) return Picture
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'exe', 'msi', 'dmg', 'pkg'].includes(extension))
+    return FolderOpened
+  if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md'].includes(extension))
+    return Document
+  return Files
 }
 
-const openFilePicker = () => {
-  if (uploading.value) return
-  fileInput.value?.click()
+const resolveDefaultReviewNote = (statusKey) => {
+  if (statusKey === 'approved') return '资源已通过审核，已在公开资源中展示。'
+  if (statusKey === 'rejected') return '该资源未通过审核，请根据内容规范调整后重新上传。'
+  return '资源已上传成功，正在等待管理员审核。'
 }
 
-const isSupportedImageFile = (file) => {
-  const extension = getFileExtension(file?.name || '')
-  return file?.type?.toLowerCase().startsWith('image/') || SUPPORTED_IMAGE_EXTENSIONS.has(extension)
+const patchResourceInList = (listRef, resourceId, updater) => {
+  listRef.value = listRef.value.map((item) => {
+    if (item.id !== resourceId) return item
+    return normalizeResource(updater(item))
+  })
+}
+
+const patchResourceEverywhere = (resourceId, updater) => {
+  patchResourceInList(publicResources, resourceId, updater)
+  patchResourceInList(myResources, resourceId, updater)
+  patchResourceInList(adminResources, resourceId, updater)
+}
+
+const loadPublicResources = async () => {
+  loading.value = true
+  try {
+    const response = await fetchPublicResources()
+    publicResources.value = Array.isArray(response)
+      ? response.map((item) => normalizeResource(item))
+      : []
+  } catch (error) {
+    console.error('加载公开资源失败', error)
+    ElMessage.error(error.message || '加载公开资源失败，请稍后重试。')
+  } finally {
+    loading.value = false
+  }
+}
+
+const loadMyResources = async () => {
+  if (!canUpload.value) {
+    myResources.value = []
+    return
+  }
+
+  mineLoading.value = true
+  try {
+    const response = await fetchMyResources()
+    myResources.value = Array.isArray(response)
+      ? response.map((item) => normalizeResource(item))
+      : []
+  } catch (error) {
+    console.error('加载我的资源失败', error)
+    ElMessage.error(error.message || '加载我的资源失败，请稍后重试。')
+  } finally {
+    mineLoading.value = false
+  }
+}
+
+const loadAdminResources = async () => {
+  if (!isAdmin.value) {
+    adminResources.value = []
+    return
+  }
+
+  reviewLoading.value = true
+  try {
+    const response = await fetchAdminResources(
+      reviewStatusFilter.value === 'ALL' ? undefined : reviewStatusFilter.value,
+    )
+    adminResources.value = Array.isArray(response)
+      ? response.map((item) => normalizeResource(item))
+      : []
+  } catch (error) {
+    console.error('加载资源审核列表失败', error)
+    ElMessage.error(error.message || '加载资源审核列表失败，请稍后重试。')
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
+const refreshAll = async () => {
+  const tasks = [loadPublicResources()]
+  if (canUpload.value) tasks.push(loadMyResources())
+  if (isAdmin.value) tasks.push(loadAdminResources())
+  await Promise.all(tasks)
+}
+
+const isSupportedFile = (file) => {
+  const extension = extractExtension(file?.name || '')
+  return SUPPORTED_EXTENSIONS.includes(extension)
 }
 
 const validateSelectedFile = (file) => {
-  if (!isSupportedImageFile(file)) {
-    ElMessage.error(`${file.name} 不是后端允许的图片资源格式`)
+  if (!isSupportedFile(file)) {
+    ElMessage.error(`${file.name} 暂不支持上传`)
     return false
   }
 
-  if (file.size > MAX_IMAGE_SIZE) {
-    ElMessage.error(`${file.name} 超过 10MB，无法上传`)
+  if (file.size > MAX_RESOURCE_SIZE) {
+    ElMessage.error(`${file.name} 超过 ${maxUploadSizeText.value}，无法上传`)
     return false
   }
 
   return true
 }
 
-const buildResourceRecord = (file, relativeUrl) => {
-  const extension = getFileExtension(file.name)
-  const category = getCategoryLabel(extension)
-  const uploadedAtValue = Date.now()
-
-  return normalizeResourceRecord({
-    id: `${uploadedAtValue}-${Math.random().toString(36).slice(2, 8)}`,
-    originalName: file.name,
-    extension,
-    category,
-    categoryKey: getCategoryKey(category),
-    fileSize: file.size,
-    fileSizeFormatted: formatFileSize(file.size),
-    relativeUrl,
-    mimeType: file.type || 'application/octet-stream',
-    uploadedAtValue,
-    uploaderName: currentUploaderName.value,
-    uploaderAvatar: currentUploaderAvatar.value,
-    uploaderInitial: currentUploaderInitial.value,
-    downloadCount: 0,
-  })
+const openFilePicker = () => {
+  if (!canUpload.value) {
+    ElMessage.warning('请先登录后再上传资源')
+    return
+  }
+  if (uploading.value) return
+  fileInputRef.value?.click()
 }
 
-const uploadSingleFile = async (file, currentIndex, total) => {
+const handleDragEnter = () => {
+  if (!canUpload.value || uploading.value) return
+  isDragActive.value = true
+}
+
+const handleDragOver = () => {
+  if (!canUpload.value || uploading.value) return
+  isDragActive.value = true
+}
+
+const handleDragLeave = () => {
+  isDragActive.value = false
+}
+
+const uploadSingleFile = async (file, index, total) => {
   const formData = new FormData()
   formData.append('file', file)
 
   uploadProgress.value = 0
-  uploadStatusText.value = `正在上传 ${currentIndex}/${total} · ${file.name}`
+  uploadStatusText.value = `正在上传 ${index}/${total} · ${file.name}`
 
-  const relativeUrl = await uploadResourceFile(formData, {
+  return uploadResourceFile(formData, {
     onUploadProgress: ({ loaded, total: totalSize }) => {
       if (!totalSize) return
       uploadProgress.value = Math.min(100, Math.round((loaded / totalSize) * 100))
     },
   })
-
-  const resourceRecord = buildResourceRecord(file, relativeUrl)
-  resources.value = [resourceRecord, ...resources.value].slice(0, 80)
-  persistResources()
 }
 
-const handleFileSelection = async (event) => {
-  const files = Array.from(event.target?.files || []).filter((file) => validateSelectedFile(file))
-  if (!files.length || uploading.value) {
-    if (event.target) {
-      event.target.value = ''
-    }
+const uploadFiles = async (selectedFiles = []) => {
+  if (!canUpload.value) {
+    ElMessage.warning('请先登录后再上传资源')
     return
   }
 
+  const files = Array.from(selectedFiles).filter((file) => validateSelectedFile(file))
+  if (!files.length || uploading.value) return
+
   uploading.value = true
   let successCount = 0
+  let pendingCount = 0
+  let approvedCount = 0
 
   try {
     for (const [index, file] of files.entries()) {
       try {
-        await uploadSingleFile(file, index + 1, files.length)
+        const response = await uploadSingleFile(file, index + 1, files.length)
+        const normalized = normalizeResource(response)
         successCount += 1
+        if (normalized.statusKey === 'approved') {
+          approvedCount += 1
+        } else {
+          pendingCount += 1
+        }
       } catch (error) {
         console.error('资源上传失败', error)
-        ElMessage.error(`${file.name} 上传失败，请稍后重试。`)
       }
     }
 
     uploadProgress.value = successCount ? 100 : 0
     uploadStatusText.value = successCount
-      ? `上传完成，成功处理 ${successCount}/${files.length} 个文件`
+      ? `上传完成，成功 ${successCount}/${files.length} 个文件`
       : '本次上传未成功写入资源'
 
     if (successCount) {
-      ElMessage.success(`资源上传完成，成功 ${successCount} 个`)
+      await refreshAll()
+      if (pendingCount && !approvedCount) {
+        ElMessage.success(`上传成功 ${successCount} 个文件，已进入待审核列表`)
+      } else if (approvedCount && !pendingCount) {
+        ElMessage.success(`上传成功 ${successCount} 个文件，已直接展示到页面`)
+      } else {
+        ElMessage.success(`上传成功 ${successCount} 个文件，其中 ${pendingCount} 个待审核`)
+      }
     }
   } finally {
+    isDragActive.value = false
+
     window.setTimeout(() => {
       uploading.value = false
       uploadProgress.value = 0
       uploadStatusText.value = ''
-    }, 480)
-
-    if (event.target) {
-      event.target.value = ''
-    }
+    }, 600)
   }
 }
 
-const updateResourceRecord = (resourceId, updater) => {
-  resources.value = resources.value.map((item) => {
-    if (item.id !== resourceId) return item
-    return normalizeResourceRecord(updater(item))
-  })
-  persistResources()
+const handleFileSelection = async (event) => {
+  try {
+    await uploadFiles(event.target?.files || [])
+  } finally {
+    if (event.target) event.target.value = ''
+  }
 }
 
-const isRemovingResource = (resourceId) => removingResourceIds.value.includes(resourceId)
+const handleDrop = async (event) => {
+  isDragActive.value = false
+  await uploadFiles(event.dataTransfer?.files || [])
+}
+
+const isRemoving = (resourceId) => removingIds.value.includes(resourceId)
+const canRemoveResource = (resource) =>
+  isAdmin.value || (currentUserId.value && currentUserId.value === resource.uploaderId)
 
 const copyResourceLink = async (resource) => {
   try {
-    if (!navigator.clipboard?.writeText) {
-      throw new Error('clipboard API unavailable')
-    }
-
     await navigator.clipboard.writeText(resource.fileUrl)
     ElMessage.success('资源链接已复制')
   } catch (error) {
@@ -707,240 +985,265 @@ const copyResourceLink = async (resource) => {
   }
 }
 
-const downloadResource = (resource) => {
-  updateResourceRecord(resource.id, (item) => ({
+const copyMarkdownLink = async (resource) => {
+  const markdown = resource.isPreviewable
+    ? `![${resource.originalName}](${resource.fileUrl})`
+    : `[${resource.originalName}](${resource.fileUrl})`
+
+  try {
+    await navigator.clipboard.writeText(markdown)
+    ElMessage.success('引用链接已复制')
+  } catch (error) {
+    console.error('复制 Markdown 引用失败', error)
+    window.prompt('当前环境不支持自动复制，请手动复制引用链接', markdown)
+  }
+}
+
+const openResourcePreview = (resource) => {
+  window.open(resource.fileUrl, '_blank', 'noopener')
+}
+
+const openResource = async (resource) => {
+  window.open(resource.fileUrl, '_blank', 'noopener')
+
+  if (resource.statusKey !== 'approved') return
+
+  patchResourceEverywhere(resource.id, (item) => ({
     ...item,
     downloadCount: Number(item.downloadCount || 0) + 1,
   }))
 
-  const anchor = document.createElement('a')
-  anchor.href = resource.fileUrl
-  anchor.target = '_blank'
-  anchor.rel = 'noopener'
-  anchor.download = resource.originalName
-  document.body.appendChild(anchor)
-  anchor.click()
-  document.body.removeChild(anchor)
+  try {
+    await recordResourceDownload(resource.id)
+  } catch (error) {
+    console.error('记录资源下载次数失败', error)
+  }
 }
 
 const removeResource = async (resource) => {
-  if (isRemovingResource(resource.id)) return
-
-  removingResourceIds.value = [...removingResourceIds.value, resource.id]
+  if (!canRemoveResource(resource) || isRemoving(resource.id)) return
 
   try {
-    await deleteResourceFile(resource.fileUrl || resource.relativeUrl)
-    resources.value = resources.value.filter((item) => item.id !== resource.id)
-    persistResources()
-    ElMessage.success('资源已删除')
-  } finally {
-    removingResourceIds.value = removingResourceIds.value.filter((id) => id !== resource.id)
-  }
-}
-
-const loadAnnouncements = async () => {
-  try {
-    const response = await fetchSiteAnnouncements()
-    announcements.value = Array.isArray(response) ? response : []
+    await ElMessageBox.confirm(
+      `确定删除资源「${resource.originalName}」吗？删除后无法恢复。`,
+      '删除资源',
+      {
+        type: 'warning',
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+      },
+    )
   } catch (error) {
-    console.error('获取站点公告失败', error)
-    announcements.value = []
+    if (error === 'cancel' || error === 'close') return
+    console.error('删除确认失败', error)
+    ElMessage.error('删除确认失败，请稍后重试。')
+    return
+  }
+
+  removingIds.value = [...removingIds.value, resource.id]
+
+  try {
+    await deleteResourceFile(resource.id)
+    await refreshAll()
+    ElMessage.success('资源已删除')
+  } catch (error) {
+    console.error('删除资源失败', error)
+    ElMessage.error(error.message || '删除资源失败，请稍后重试。')
+  } finally {
+    removingIds.value = removingIds.value.filter((item) => item !== resource.id)
   }
 }
+
+const submitReview = async (resource, status, reviewNote = '') => {
+  if (reviewingIds.value.includes(resource.id)) return
+
+  reviewingIds.value = [...reviewingIds.value, resource.id]
+
+  try {
+    await reviewResourceFile(resource.id, { status, reviewNote })
+    await refreshAll()
+    ElMessage.success(status === 'APPROVED' ? '资源已审核通过' : '资源已驳回')
+  } catch (error) {
+    console.error('审核资源失败', error)
+    ElMessage.error(error.message || '审核资源失败，请稍后重试。')
+  } finally {
+    reviewingIds.value = reviewingIds.value.filter((item) => item !== resource.id)
+  }
+}
+
+const approveResource = async (resource) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认通过资源「${resource.originalName}」吗？通过后会展示在公开资源中。`,
+      '审核通过',
+      {
+        type: 'success',
+        confirmButtonText: '确认通过',
+        cancelButtonText: '取消',
+      },
+    )
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return
+    console.error('审核确认失败', error)
+    ElMessage.error('审核确认失败，请稍后重试。')
+    return
+  }
+
+  await submitReview(resource, 'APPROVED')
+}
+
+const rejectResource = async (resource) => {
+  try {
+    const result = await ElMessageBox.prompt(
+      '可选填写驳回原因，用户会在“我的上传”里看到这条备注。',
+      '驳回资源',
+      {
+        inputPlaceholder: '例如：资源内容与分类不符',
+        confirmButtonText: '确认驳回',
+        cancelButtonText: '取消',
+      },
+    )
+
+    await submitReview(resource, 'REJECTED', result.value?.trim() || '')
+  } catch (error) {
+    if (error === 'cancel' || error === 'close') return
+    console.error('驳回资源失败', error)
+    ElMessage.error('驳回资源失败，请稍后重试。')
+  }
+}
+
+watch(reviewStatusFilter, () => {
+  if (isAdmin.value) {
+    loadAdminResources()
+  }
+})
+
+watch(
+  () => `${userStore.isLoggedIn}-${userStore.isAdmin}-${userStore.profile?.id || ''}`,
+  () => {
+    refreshAll()
+  },
+)
 
 onMounted(() => {
-  restoreResources()
-  loadAnnouncements()
+  refreshAll()
 })
 </script>
 
 <style scoped>
 .resources-page {
-  width: min(1420px, calc(100vw - 40px));
-  margin-top: 28px;
-  padding: 18px 0 56px;
-  color: #f3f7fb;
-  align-self: flex-start;
-  animation: fadeIn 0.58s ease-out forwards;
-  opacity: 0;
+  width: 700px;
+  padding: 28px 0 56px;
+  box-sizing: border-box;
+  display: contents;
 }
 
-.notice-strip {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 18px;
-  border-radius: 18px 18px 0 0;
-  background: linear-gradient(90deg, rgba(211, 235, 255, 0.94), rgba(180, 223, 255, 0.94));
-  color: #2f70d8;
-  overflow: hidden;
+.resources-shell {
+  width: min(1420px, calc(70vw - 40px));
+  margin: 0 auto;
+  display: grid;
+  gap: 22px;
+  --resource-accent: #69ba78;
+
+  --resource-accent-soft: #edf8ee;
+  --resource-border: rgba(113, 142, 118, 0.18);
+  --resource-card-border: rgba(196, 205, 210, 0.7);
+  --resource-text: #2f3f58;
+  --resource-muted: #6b7485;
+  animation: pageFadeIn 0.45s ease-out forwards;
 }
 
-.notice-label {
-  flex: none;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.62);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
+.hero-panel,
+.resource-board {
+  border: 1px solid rgba(226, 228, 236, 0.92);
+  border-radius: 26px;
 
-.notice-track {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.notice-track span {
-  display: inline-block;
-  padding-left: 100%;
-  animation: marquee 18s linear infinite;
+  box-shadow: 0 18px 38px rgba(169, 170, 197, 0.12);
+  margin: 2px;
 }
 
 .hero-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
-  gap: 28px;
-  padding: 42px 44px;
-  border-radius: 0 0 32px 32px;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(226, 233, 240, 0.72) 0%, rgba(226, 233, 240, 0.12) 32%, transparent 56%),
-    radial-gradient(circle at 68% 42%, rgba(27, 72, 166, 0.32) 0%, transparent 34%),
-    linear-gradient(135deg, rgba(92, 87, 130, 0.9) 0%, rgba(15, 24, 43, 0.98) 46%, rgba(59, 74, 95, 0.9) 100%);
-  box-shadow: 0 28px 48px rgba(18, 26, 42, 0.18);
+  padding: 30px;
 }
 
 .hero-copy {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 0;
-}
-
-.hero-kicker,
-.panel-kicker,
-.api-kicker,
-.section-kicker {
-  margin: 0 0 10px;
-  font-size: 13px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.hero-kicker {
-  color: rgba(174, 191, 212, 0.84);
-}
-
-.panel-kicker,
-.api-kicker,
-.section-kicker {
-  color: #7c8da5;
+  display: grid;
+  gap: 12px;
 }
 
 .hero-copy h1,
-.panel-copy h2,
-.api-card h3,
-.section-header h3 {
+.board-header h2 {
   margin: 0;
+  color: var(--resource-text);
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.12;
 }
 
-.hero-copy h1 {
-  font-size: clamp(42px, 4vw, 64px);
-  color: #4e5cff;
-  line-height: 1.02;
-}
-
-.hero-description {
-  max-width: 560px;
-  margin: 18px 0 24px;
-  line-height: 1.9;
-  color: rgba(224, 231, 240, 0.78);
-  font-size: 16px;
-}
-
-.hero-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.metric-item {
-  min-width: 120px;
-  padding: 16px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 22px;
-  background: rgba(16, 24, 40, 0.38);
-}
-
-.metric-item strong {
-  display: block;
-  font-size: 24px;
-  color: #ffffff;
-}
-
-.metric-item span {
-  display: block;
-  margin-top: 6px;
-  color: rgba(193, 204, 217, 0.78);
-  font-size: 13px;
+.hero-copy p,
+.board-header p,
+.drop-zone-copy span,
+.review-meta,
+.review-note-block {
+  margin: 0;
+  color: var(--resource-muted);
+  font-size: 14px;
+  line-height: 1.8;
 }
 
 .hero-tools {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 14px;
+  margin-top: 24px;
 }
 
-.search-shell {
+.hero-search-shell {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 70px;
-  padding: 0 22px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 24px;
-  background: rgba(20, 24, 32, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  min-height: 60px;
+  padding: 0 18px;
+  border: 1px solid rgba(198, 205, 225, 0.9);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
 }
 
-.search-icon {
-  color: rgba(205, 213, 223, 0.72);
+.hero-search-icon {
+  color: #9ca4bb;
   font-size: 18px;
 }
 
-.search-input {
+.hero-search-input {
   width: 100%;
   border: none;
   outline: none;
   background: transparent;
-  color: #edf3fa;
-  font-size: 16px;
+  color: var(--resource-text);
+  font-size: 15px;
 }
 
-.search-input::placeholder {
-  color: rgba(201, 210, 220, 0.52);
-}
-
-.hero-actions {
-  display: flex;
-  justify-content: flex-end;
+.hero-search-input::placeholder {
+  color: #9ea8ba;
 }
 
 .upload-button,
-.primary-action,
-.ghost-action,
-.filter-chip,
-.sort-chip {
+.toolbar-chip,
+.card-action,
+.text-button {
   border: none;
   cursor: pointer;
   transition:
-    transform 0.24s ease,
-    background 0.24s ease,
-    border-color 0.24s ease,
-    color 0.24s ease,
-    box-shadow 0.24s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.upload-button:hover,
+.toolbar-chip:hover,
+.card-action:hover,
+.text-button:hover {
+  transform: translateY(-1px);
 }
 
 .upload-button {
@@ -948,559 +1251,633 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-width: 188px;
-  min-height: 70px;
-  padding: 0 28px;
-  border-radius: 24px;
-  background: linear-gradient(135deg, #5ab2ff 0%, #3d8df4 100%);
-  color: #ffffff;
-  font-size: 22px;
+  min-width: 166px;
+  min-height: 60px;
+  padding: 0 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #7bbe87 0%, #57a868 100%);
+  color: #fff;
+  font-size: 16px;
   font-weight: 700;
-  box-shadow: 0 18px 28px rgba(61, 141, 244, 0.22);
-}
-
-.upload-button:hover:not(:disabled),
-.primary-action:hover,
-.ghost-action:hover,
-.filter-chip:hover,
-.sort-chip:hover {
-  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(89, 157, 101, 0.22);
 }
 
 .upload-button:disabled,
-.ghost-action:disabled,
-.primary-action:disabled {
+.card-action:disabled,
+.text-button:disabled {
   cursor: not-allowed;
   opacity: 0.72;
+  transform: none;
 }
 
 .native-file-input {
   display: none;
 }
 
-.upload-hint {
-  margin: 0;
-  color: rgba(186, 198, 212, 0.78);
-  line-height: 1.8;
+.category-group,
+.drop-zone,
+.upload-progress-card {
+  grid-column: 1 / -1;
+}
+
+.toolbar-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbar-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f9fafc 0%, #f1f4fa 100%);
+  color: #65718a;
   font-size: 14px;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(202, 208, 220, 0.75);
 }
 
-.upload-hint code,
-.api-card code {
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: rgba(79, 112, 168, 0.08);
-  color: inherit;
+.toolbar-chip em {
+  font-style: normal;
+  color: #93a0b6;
 }
 
-.progress-card {
+.toolbar-chip.active {
+  background: linear-gradient(180deg, #ffffff 0%, #eef5ff 100%);
+  color: #4c86f7;
+  box-shadow: inset 0 0 0 1px rgba(87, 150, 255, 0.68);
+}
+
+.sort-chip.active {
+  color: #2f3f58;
+}
+
+.drop-zone {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding: 18px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1.5px dashed rgba(111, 166, 120, 0.42);
   border-radius: 20px;
-  background: rgba(14, 20, 34, 0.82);
+  background: linear-gradient(180deg, rgba(246, 252, 246, 0.96), rgba(240, 248, 241, 0.96));
 }
 
-.progress-head {
+.drop-zone.active {
+  border-color: #5aa66a;
+  background: linear-gradient(180deg, rgba(236, 249, 236, 0.98), rgba(228, 245, 230, 0.98));
+}
+
+.drop-zone.disabled {
+  opacity: 0.72;
+}
+
+.drop-zone-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(123, 190, 135, 0.24), rgba(92, 168, 107, 0.18));
+  color: var(--resource-accent-strong);
+  font-size: 24px;
+}
+
+.drop-zone-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.drop-zone-copy strong {
+  color: #34513e;
+  font-size: 15px;
+}
+
+.upload-progress-card {
+  padding: 16px 18px;
+  border: 1px solid rgba(180, 195, 185, 0.55);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.upload-progress-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-  color: #eef6ff;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: #4b576a;
   font-size: 14px;
 }
 
-.progress-bar {
-  width: 100%;
-  height: 10px;
+.upload-progress-bar {
+  height: 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(123, 190, 135, 0.15);
   overflow: hidden;
 }
 
-.progress-fill {
+.upload-progress-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #6ac0ff 0%, #5580ff 100%);
+  background: linear-gradient(90deg, #8bd391 0%, #53a764 100%);
 }
 
-.resource-panel {
-  margin-top: 28px;
-  padding: 30px;
-  border-radius: 28px;
-  background: linear-gradient(180deg, rgba(245, 248, 252, 0.96) 0%, rgba(238, 244, 249, 0.98) 100%);
-  box-shadow: 0 24px 44px rgba(19, 25, 35, 0.12);
-  color: #243448;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 24px;
-  margin-bottom: 24px;
-}
-
-.panel-copy h2 {
-  font-size: 34px;
-  color: #223042;
-}
-
-.panel-description {
-  max-width: 780px;
-  margin: 12px 0 0;
-  color: #67778c;
-  line-height: 1.85;
-}
-
-.summary-strip {
+.hero-stats,
+.board-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  min-width: 420px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-top: 22px;
 }
 
-.summary-chip,
-.toolbar-card,
-.api-card,
-.resource-card,
-.resource-section {
-  background: #ffffff;
-  border: 1px solid rgba(33, 51, 75, 0.08);
-  box-shadow: 0 16px 30px rgba(33, 51, 75, 0.08);
-}
-
-.summary-chip {
+.hero-stat-card,
+.summary-card {
+  min-height: 86px;
   padding: 16px 18px;
+  border: 1px solid rgba(210, 216, 228, 0.92);
   border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
 }
 
-.summary-chip span {
+.hero-stat-card strong,
+.summary-card strong {
   display: block;
-  color: #8795a9;
+  color: var(--resource-text);
+  font-size: 24px;
+}
+
+.hero-stat-card span,
+.summary-card span {
+  display: block;
+  margin-top: 8px;
+  color: #79849a;
   font-size: 13px;
 }
 
-.summary-chip strong {
-  display: block;
-  margin-top: 8px;
-  color: #243448;
-  font-size: 16px;
+.resource-board {
+  padding: 28px 30px;
 }
 
-.toolbar-grid {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: 18px;
-}
-
-.toolbar-card {
-  padding: 18px;
-  border-radius: 22px;
-}
-
-.toolbar-head {
+.board-header {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.toolbar-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: #26374c;
-}
-
-.toolbar-head small {
-  color: #8393a9;
-}
-
-.filter-group,
-.sort-group {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.filter-chip,
-.sort-chip {
-  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1px solid rgba(33, 51, 75, 0.08);
-  border-radius: 14px;
-  background: #f4f7fb;
-  color: #556579;
-  font-weight: 600;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.filter-chip em {
-  font-style: normal;
-  color: #8a99ad;
-}
-
-.filter-chip.active,
-.sort-chip.active {
-  border-color: rgba(71, 133, 255, 0.28);
-  background: linear-gradient(135deg, rgba(89, 160, 255, 0.14), rgba(93, 122, 255, 0.14));
-  color: #2551c7;
+.text-button {
+  padding: 0;
+  background: transparent;
+  color: #5c87e9;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .resource-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 20px;
+  display: grid;
+  gap: 28px;
+  margin-top: 24px;
 }
 
 .resource-section {
-  padding: 22px;
-  border-radius: 24px;
+  display: grid;
+  gap: 18px;
 }
 
-.section-header {
+.section-heading {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 18px;
+  align-items: center;
 }
 
-.section-header h3 {
-  font-size: 24px;
-  color: #243448;
+.section-title-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 0 22px;
+  border: 1px solid rgba(208, 216, 234, 0.9);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #edf2ff 0%, #f6f8ff 100%);
+  color: #334461;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.section-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.hero-pill {
+  width: fit-content;
 }
 
-.section-meta span {
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #f2f6fb;
-  color: #65768c;
-  font-size: 13px;
+.section-title-icon {
+  font-size: 21px;
 }
 
 .resource-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 2fr));
+}
+
+.compact-grid {
+  margin-top: 22px;
+  gap: 15px;
 }
 
 .resource-card {
   display: flex;
   flex-direction: column;
-  min-height: 320px;
-  padding: 22px;
-  border-radius: 22px;
-  color: #25364c;
+  min-height: 314px;
+  border: 1px solid var(--resource-card-border);
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
 }
 
-.resource-card-head {
+.compact-card {
+  min-height: 252px;
+}
+
+.resource-card-top {
+  padding: 18px 18px 0;
+}
+
+.resource-card-body {
+  padding: 18px 18px 0;
+}
+
+.compact-body {
+  padding-top: 16px;
+}
+
+.resource-preview-frame {
+  position: relative;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 126px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #f2f6ff 0%, #edf1fb 100%);
+}
+
+.compact-preview {
+  height: 96px;
+}
+
+.resource-preview-frame.is-package,
+.resource-preview-frame.is-installer {
+  background: linear-gradient(180deg, #f2f6ff 0%, #eef2fb 100%);
+}
+
+.resource-preview-frame.is-pdf,
+.resource-preview-frame.is-document {
+  background: linear-gradient(180deg, #fff4f5 0%, #fff8f7 100%);
+}
+
+.resource-preview-frame.is-image {
+  background: linear-gradient(180deg, #eef8ed 0%, #f7fcf5 100%);
+}
+
+.resource-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .resource-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 18px;
-  font-size: 34px;
+  font-size: 38px;
 }
 
-.resource-icon.is-package {
-  background: linear-gradient(135deg, rgba(255, 203, 107, 0.18), rgba(255, 160, 79, 0.22));
-  color: #d9822b;
+.compact-icon {
+  width: 54px;
+  height: 54px;
+  font-size: 28px;
 }
 
+.resource-icon.is-image {
+  background: linear-gradient(135deg, #dff0da 0%, #edf8e9 100%);
+  color: #4d8e59;
+}
+
+.resource-icon.is-package,
 .resource-icon.is-installer {
-  background: linear-gradient(135deg, rgba(118, 173, 255, 0.18), rgba(78, 111, 255, 0.18));
-  color: #3a66d5;
+  background: linear-gradient(135deg, #e4ecff 0%, #f1f5ff 100%);
+  color: #4c86f7;
 }
 
-.resource-icon.is-document {
-  background: linear-gradient(135deg, rgba(125, 213, 172, 0.18), rgba(63, 179, 126, 0.2));
-  color: #21915d;
-}
-
-.resource-icon.is-media,
+.resource-icon.is-pdf,
+.resource-icon.is-document,
 .resource-icon.is-generic {
-  background: linear-gradient(135deg, rgba(172, 179, 255, 0.18), rgba(111, 133, 255, 0.2));
-  color: #4f68d9;
+  background: linear-gradient(135deg, #ffe7e7 0%, #fff3f0 100%);
+  color: #e35f5f;
 }
 
-.resource-badges {
+.resource-name {
+  margin: 0;
+  color: var(--resource-text);
+  font-size: 16px;
+  line-height: 1.6;
+  text-align: center;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.left-align {
+  text-align: left;
+}
+
+.card-head-row {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.resource-category-tag,
-.resource-extension-tag {
-  padding: 6px 10px;
+.review-title-row {
+  align-items: center;
+}
+
+.resource-tags {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.left-align-tags {
+  justify-content: flex-start;
+}
+
+.resource-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.resource-badge.free {
+  border: 1px solid #bce593;
+  color: #70a83d;
+  background: #f8fff1;
+}
+
+.resource-badge.secondary {
+  background: #f0f4ed;
+  color: #768176;
+}
+
+.resource-status {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
 }
 
-.resource-category-tag {
-  background: #eef4ff;
-  color: #4272d7;
+.resource-status.is-pending {
+  background: #fff7e5;
+  color: #c08a1f;
 }
 
-.resource-extension-tag {
-  background: #f3f5f8;
-  color: #6a788e;
+.resource-status.is-approved {
+  background: #edf9ef;
+  color: #38914a;
 }
 
-.resource-card h4 {
-  margin: 18px 0 10px;
-  font-size: 18px;
-  line-height: 1.5;
-  color: #233348;
-  word-break: break-word;
+.resource-status.is-rejected {
+  background: #fff0f0;
+  color: #d45a5a;
 }
 
-.resource-path {
-  margin: 0;
-  color: #73849b;
-  line-height: 1.75;
-  word-break: break-all;
-}
-
-.resource-meta-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px 12px;
-  margin-top: 18px;
-}
-
-.resource-meta-grid span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: #607187;
-  font-size: 13px;
-}
-
-.resource-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.resource-card-footer {
   margin-top: auto;
-  padding-top: 20px;
-  border-top: 1px solid rgba(33, 51, 75, 0.08);
+  padding: 14px 18px 16px;
+  border-top: 1px solid rgba(228, 230, 238, 0.92);
 }
 
-.resource-owner {
-  display: flex;
-  align-items: center;
+.info-footer {
+  display: grid;
   gap: 12px;
 }
 
-.owner-avatar {
-  flex: none;
-}
-
-.resource-owner strong,
-.resource-owner small {
-  display: block;
-}
-
-.resource-owner strong {
-  color: #243448;
-}
-
-.resource-owner small {
-  margin-top: 4px;
-  color: #8393a7;
-}
-
-.resource-actions-row {
+.compact-footer {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
 }
 
-.ghost-action,
-.primary-action {
+.resource-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  color: #6f7788;
+  font-size: 13px;
+}
+
+.resource-meta-line span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.resource-owner-row,
+.resource-owner,
+.resource-actions,
+.review-card-actions {
+  display: flex;
+  align-items: center;
+}
+
+.resource-owner-row {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.resource-owner,
+.compact-owner {
+  gap: 10px;
+  color: #535d73;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.resource-actions,
+.review-card-actions {
+  gap: 8px;
+}
+
+.card-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  flex: 1;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: 14px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 700;
 }
 
-.ghost-action {
-  border: 1px solid rgba(33, 51, 75, 0.08);
-  background: #f6f8fb;
-  color: #53657c;
+.card-action.ghost {
+  background: #f2f5fb;
+  color: #63738f;
 }
 
-.danger-action {
-  background: #fff4f2;
-  color: #d15d53;
+.card-action.ghost.danger {
+  background: #fff1f1;
+  color: #d86558;
 }
 
-.primary-action {
-  background: linear-gradient(135deg, #5aa9ff 0%, #4b7cff 100%);
-  color: #ffffff;
+.card-action.primary,
+.card-action.approve {
+  min-width: 66px;
+  background: linear-gradient(135deg, #79bf88 0%, #57a868 100%);
+  color: #fff;
 }
 
-.resource-empty {
-  padding: 28px 0 8px;
+.card-action.reject {
+  min-width: 66px;
+  background: #fff3f3;
+  color: #d45a5a;
 }
 
-.empty-button {
-  margin-top: 12px;
-  min-height: 56px;
+.review-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.review-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 1px solid rgba(220, 225, 235, 0.9);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff 0%, #fafbff 100%);
+}
+
+.review-card-main {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.review-card-main strong {
+  color: var(--resource-text);
   font-size: 16px;
 }
 
-.api-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 24px;
+.review-note-block {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f7f9fc;
 }
 
-.api-card {
-  padding: 24px;
-  border-radius: 22px;
-  color: #25354a;
+.admin-note {
+  margin-top: 6px;
 }
 
-.api-card h3 {
-  margin-bottom: 12px;
-  font-size: 24px;
-  word-break: break-word;
-}
-
-.api-card p:last-child {
-  margin: 0;
-  color: #607086;
-  line-height: 1.85;
-}
-
-@media screen and (max-width: 1360px) {
+@media (max-width: 1320px) {
   .resource-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
-@media screen and (max-width: 1180px) {
-  .hero-panel,
-  .panel-header,
-  .toolbar-grid,
-  .api-grid {
+@media (max-width: 1100px) {
+  .hero-tools {
     grid-template-columns: 1fr;
   }
 
-  .hero-panel {
-    padding: 32px 28px;
-  }
-
-  .panel-header {
-    display: block;
-  }
-
-  .summary-strip {
-    min-width: 0;
-    margin-top: 18px;
+  .upload-button {
+    width: 100%;
   }
 
   .resource-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .review-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
-@media screen and (max-width: 760px) {
-  .resources-page {
+@media (max-width: 720px) {
+  .resources-shell {
     width: calc(100vw - 20px);
-    padding-bottom: 36px;
-  }
-
-  .notice-strip {
-    border-radius: 16px 16px 0 0;
   }
 
   .hero-panel,
-  .resource-panel,
-  .resource-section {
-    padding: 24px 18px;
+  .resource-board {
+    padding: 20px 16px;
+    border-radius: 22px;
   }
 
-  .hero-panel {
-    gap: 22px;
-    border-radius: 0 0 24px 24px;
+  .hero-copy h1,
+  .board-header h2 {
+    font-size: 28px;
   }
 
-  .hero-copy h1 {
-    font-size: 40px;
-  }
-
-  .search-shell,
-  .upload-button {
-    min-height: 58px;
-  }
-
-  .upload-button {
-    width: 100%;
-    font-size: 18px;
-  }
-
-  .summary-strip,
-  .resource-grid,
-  .api-grid,
-  .resource-meta-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .section-header,
-  .toolbar-head {
+  .drop-zone {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .resource-actions-row {
+  .resource-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .board-header,
+  .resource-owner-row,
+  .compact-footer {
     flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .resource-actions,
+  .review-card-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .card-action.primary,
+  .card-action.approve,
+  .card-action.reject {
+    flex: 1 1 96px;
   }
 }
 
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-100%);
-  }
-}
-
-@keyframes fadeIn {
+@keyframes pageFadeIn {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

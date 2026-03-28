@@ -23,5 +23,3 @@ export function fetchArticlesByTagId(id, params) {
     params,
   })
 }
-
-export const getAllTags = fetchTags

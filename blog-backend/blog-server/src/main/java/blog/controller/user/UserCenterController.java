@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/user")
 public class UserCenterController
@@ -94,9 +96,11 @@ public class UserCenterController
     @PutMapping("/admin/posts/{id}")
     @ApiOperation("管理员更新帖子状态")
     public Result<Void> updateAdminPostMeta(@PathVariable Long id,
-                                            @RequestBody ForumPostAdminUpdateDTO request,
+                                            @RequestBody Map<String, Object> payload,
                                             Authentication authentication)
     {
+        ForumPostAdminUpdateDTO request = buildForumPostAdminUpdateDTO(payload);
+
         if (authentication == null || authentication.getName() == null) {
             return Result.error(401, "未登录");
         }
@@ -124,5 +128,50 @@ public class UserCenterController
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }
+    }
+
+    private ForumPostAdminUpdateDTO buildForumPostAdminUpdateDTO(Map<String, Object> payload)
+    {
+        ForumPostAdminUpdateDTO request = new ForumPostAdminUpdateDTO();
+        request.setIsPinned(asBoolean(payload.get("isPinned")));
+        request.setIsFeatured(asBoolean(payload.get("isFeatured")));
+        request.setCategoryId(asLong(payload.get("categoryId")));
+        request.setTags(asString(payload.get("tags")));
+        return request;
+    }
+
+    private String asString(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private Long asLong(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        String text = String.valueOf(value).trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(text);
+    }
+
+    private Boolean asBoolean(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        return Boolean.parseBoolean(String.valueOf(value));
     }
 }

@@ -72,7 +72,7 @@ public class UserCenterServiceImpl implements UserCenterService
                 : forumReportMapper.selectByReporterId(currentUser.getId(), CENTER_LIST_LIMIT);
         List<UserNotificationVO> notifications = userNotificationMapper.selectByUserId(currentUser.getId(), CENTER_LIST_LIMIT);
         List<ForumPostVO> moderationPosts = admin
-                ? forumPostMapper.selectPage("latest", 0, CENTER_LIST_LIMIT, null, null, null, false)
+                ? forumPostMapper.selectPage("latest", 0, CENTER_LIST_LIMIT, null, null, null, false, null)
                 : Collections.emptyList();
 
         UserCenterOverviewVO overview = new UserCenterOverviewVO();
@@ -97,7 +97,7 @@ public class UserCenterServiceImpl implements UserCenterService
         UserAccount currentUser = requireUser(username);
         validateReportRequest(request);
 
-        ForumPostVO targetPost = forumPostMapper.selectById(request.getTargetId());
+        ForumPostVO targetPost = forumPostMapper.selectById(request.getTargetId(), 1);
         if (targetPost == null) {
             throw new IllegalArgumentException("被举报的帖子不存在");
         }
@@ -111,6 +111,7 @@ public class UserCenterServiceImpl implements UserCenterService
         report.setReason(request.getReason().trim().toUpperCase());
         report.setDetail(trimToNull(request.getDetail()));
         report.setStatus("PENDING");
+        report.setTargetAction("NONE");
         report.setCreateTime(now);
         report.setUpdateTime(now);
         forumReportMapper.insert(report);
@@ -155,14 +156,19 @@ public class UserCenterServiceImpl implements UserCenterService
             throw new IllegalArgumentException("仅支持标记为 RESOLVED 或 REJECTED");
         }
 
+        String targetAction = normalizeTargetAction(status, request.getTargetAction());
+
         ForumReportVO existingReport = forumReportMapper.selectById(reportId);
         if (existingReport == null) {
             throw new IllegalArgumentException("举报记录不存在");
         }
 
+        applyReviewAction(existingReport, status, targetAction);
+
         ForumReport update = new ForumReport();
         update.setId(reportId);
         update.setStatus(status);
+        update.setTargetAction(targetAction);
         update.setReviewerId(currentUser.getId());
         update.setReviewerNote(trimToNull(request.getReviewerNote()));
         update.setUpdateTime(LocalDateTime.now());
@@ -172,7 +178,7 @@ public class UserCenterServiceImpl implements UserCenterService
                 existingReport.getReporterId(),
                 "REPORT_REVIEWED",
                 "你的举报已有处理结果",
-                "你对《" + existingReport.getTargetTitle() + "》的举报已被标记为 " + statusLabel(status),
+                buildReviewNotificationContent(existingReport.getTargetTitle(), status, targetAction),
                 existingReport.getTargetType(),
                 existingReport.getTargetId(),
                 existingReport.getId()
@@ -235,6 +241,53 @@ public class UserCenterServiceImpl implements UserCenterService
         userNotificationMapper.insert(notification);
     }
 
+    private void applyReviewAction(ForumReportVO existingReport, String status, String targetAction)
+    {
+        if (!"RESOLVED".equals(status) || "NONE".equals(targetAction)) {
+            return;
+        }
+        if (!"forum-post".equalsIgnoreCase(existingReport.getTargetType())) {
+            throw new IllegalArgumentException("当前举报目标暂不支持该处理动作");
+        }
+
+        if ("UNPUBLISH".equals(targetAction)) {
+            forumPostService.updatePostStatus(existingReport.getTargetId(), 0);
+            return;
+        }
+        if ("DELETE".equals(targetAction)) {
+            forumPostService.deletePost(existingReport.getTargetId());
+            return;
+        }
+
+        throw new IllegalArgumentException("不支持的处理动作");
+    }
+
+    private String normalizeTargetAction(String status, String targetAction)
+    {
+        if (!"RESOLVED".equals(status)) {
+            return "NONE";
+        }
+
+        if (!StringUtils.hasText(targetAction)) {
+            throw new IllegalArgumentException("请先选择处理动作");
+        }
+
+        String normalizedAction = targetAction.trim().toUpperCase();
+        if (!"UNPUBLISH".equals(normalizedAction) && !"DELETE".equals(normalizedAction)) {
+            throw new IllegalArgumentException("仅支持设为不公开或删除内容");
+        }
+        return normalizedAction;
+    }
+
+    private String buildReviewNotificationContent(String targetTitle, String status, String targetAction)
+    {
+        if ("REJECTED".equals(status)) {
+            return "你对《" + targetTitle + "》的举报已被驳回";
+        }
+
+        return "你对《" + targetTitle + "》的举报已处理，管理员已" + targetActionLabel(targetAction);
+    }
+
     private UserAccount requireUser(String username)
     {
         return accessControlService.requireUser(username);
@@ -272,5 +325,16 @@ public class UserCenterServiceImpl implements UserCenterService
             return "已驳回";
         }
         return status;
+    }
+
+    private String targetActionLabel(String targetAction)
+    {
+        if ("UNPUBLISH".equals(targetAction)) {
+            return "设为不公开";
+        }
+        if ("DELETE".equals(targetAction)) {
+            return "删除该帖子";
+        }
+        return statusLabel(targetAction);
     }
 }

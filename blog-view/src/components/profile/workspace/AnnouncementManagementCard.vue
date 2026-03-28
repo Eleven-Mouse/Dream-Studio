@@ -11,9 +11,12 @@
       <el-table-column label="发布时间" width="180">
         <template #default="{ row }">{{ formatManagementTime(row.publishTime) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="140">
+      <el-table-column label="操作" width="122">
         <template #default="{ row }">
-          <el-button text type="danger" @click="$emit('remove', row)">删除</el-button>
+          <el-button class="table-action-button is-danger" size="small" @click="$emit('remove', row)">
+            <el-icon><Delete /></el-icon>
+            <span>删除</span>
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -21,6 +24,7 @@
 </template>
 
 <script setup>
+import { Delete } from '@element-plus/icons-vue'
 import { formatManagementTime } from '@/utils/profileManagement'
 
 defineProps({

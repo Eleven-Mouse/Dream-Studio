@@ -1,13 +1,5 @@
 <template>
   <section class="workspace-shell">
-    <div class="workspace-head">
-      <div>
-        <h2>{{ title }}</h2>
-        <p>{{ description }}</p>
-      </div>
-      <el-button round :loading="loading" @click="$emit('refresh')">刷新内容</el-button>
-    </div>
-
     <slot />
   </section>
 </template>

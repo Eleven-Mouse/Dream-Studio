@@ -23,4 +23,7 @@ public interface CategoryMapper
      */
     List<CategoryVO> selectAll();
 
+    @Select("select count(*) from category where id = #{id}")
+    int countById(Long id);
+
 }

@@ -3,42 +3,43 @@ import { useAuthStore } from '@/store/auth'
 import { useUserStore } from '@/store/user'
 import { WORKSPACE_CAPABILITIES } from '@/utils/workspaceCapabilities'
 
-const workspaceViewLoaders = {
+const profileViewLoaders = {
   user: {
-    layout: () => import('@/views/user/Layout.vue'),
-    overview: () => import('@/views/user/ProfileOverview.vue'),
-    notifications: () => import('@/views/user/NotificationCenter.vue'),
-    account: () => import('@/views/user/AccountSettings.vue'),
-    articleManagement: () => import('@/views/user/ArticleManagement.vue'),
-    momentManagement: () => import('@/views/user/MomentManagement.vue'),
-    articleEditor: () => import('@/views/user/PostArticle.vue'),
-    momentEditor: () => import('@/views/user/PostMoment.vue'),
-    forumPublish: () => import('@/views/user/PostForumThread.vue'),
-    forumManagement: () => import('@/views/user/ForumThreadManagement.vue'),
+    layout: () => import('@/views/profile/layout/UserLayout.vue'),
+    overview: () => import('@/views/profile/user/Overview.vue'),
+    notifications: () => import('@/views/profile/shared/Notifications.vue'),
+    account: () => import('@/views/profile/user/AccountSettings.vue'),
+    articleManagement: () => import('@/views/profile/shared/ArticleManagement.vue'),
+    momentManagement: () => import('@/views/profile/shared/MomentManagement.vue'),
+    articleEditor: () => import('@/views/profile/shared/ArticleEditor.vue'),
+    momentEditor: () => import('@/views/profile/shared/MomentEditor.vue'),
+    forumPublish: () => import('@/views/profile/shared/ForumPublish.vue'),
+    forumManagement: () => import('@/views/profile/shared/ForumThreadManagement.vue'),
   },
   admin: {
-    layout: () => import('@/views/admin/Layout.vue'),
-    overview: () => import('@/views/admin/AdminOverview.vue'),
-    articleManagement: () => import('@/views/admin/ArticleManagement.vue'),
-    commentManagement: () => import('@/views/admin/AdminCommentManagement.vue'),
-    reportManagement: () => import('@/views/admin/AdminReportManagement.vue'),
-    momentManagement: () => import('@/views/admin/MomentManagement.vue'),
-    articleEditor: () => import('@/views/admin/PostArticle.vue'),
-    momentEditor: () => import('@/views/admin/PostMoment.vue'),
-    categoryManagement: () => import('@/views/admin/AdminCategoryManagement.vue'),
-    tagManagement: () => import('@/views/admin/AdminTagManagement.vue'),
-    forumPublish: () => import('@/views/admin/PostForumThread.vue'),
-    forumManagement: () => import('@/views/admin/ForumThreadManagement.vue'),
-    siteOverview: () => import('@/views/admin/AdminSiteOverview.vue'),
-    userManagement: () => import('@/views/admin/AdminUserManagement.vue'),
+    layout: () => import('@/views/profile/layout/AdminLayout.vue'),
+    overview: () => import('@/views/profile/admin/Overview.vue'),
+    announcementManagement: () => import('@/views/profile/admin/AnnouncementOverview.vue'),
+    notifications: () => import('@/views/profile/shared/Notifications.vue'),
+    articleManagement: () => import('@/views/profile/shared/ArticleManagement.vue'),
+    commentManagement: () => import('@/views/profile/admin/CommentManagement.vue'),
+    reportManagement: () => import('@/views/profile/admin/ReportManagement.vue'),
+    momentManagement: () => import('@/views/profile/shared/MomentManagement.vue'),
+    articleEditor: () => import('@/views/profile/shared/ArticleEditor.vue'),
+    momentEditor: () => import('@/views/profile/shared/MomentEditor.vue'),
+    taxonomyManagement: () => import('@/views/profile/admin/TaxonomyManagement.vue'),
+    forumPublish: () => import('@/views/profile/shared/ForumPublish.vue'),
+    forumManagement: () => import('@/views/profile/shared/ForumThreadManagement.vue'),
+    siteOverview: () => import('@/views/profile/admin/SiteOverview.vue'),
+    userManagement: () => import('@/views/profile/admin/UserManagement.vue'),
   },
 }
 
-const createWorkspaceChildren = (workspaceMode) => {
-  const isAdminWorkspace = workspaceMode === 'admin'
+const createProfileChildren = (profileMode) => {
+  const isAdminWorkspace = profileMode === 'admin'
   const routeBase = isAdminWorkspace ? '/admin' : '/profile'
   const routeNamePrefix = isAdminWorkspace ? 'admin' : 'profile'
-  const views = workspaceViewLoaders[workspaceMode]
+  const views = profileViewLoaders[profileMode]
 
   const routes = [
     {
@@ -89,6 +90,17 @@ const createWorkspaceChildren = (workspaceMode) => {
   }
 
   if (isAdminWorkspace) {
+    routes.splice(1, 0, {
+      path: 'notifications',
+      name: 'adminNotifications',
+      component: views.notifications,
+      props: { workspaceMode: 'admin' },
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.PROFILE_NOTIFICATIONS_VIEW,
+      },
+    })
+
     routes.push({
       path: 'commentmgmt',
       name: 'adminCommentMgmt',
@@ -160,7 +172,8 @@ const createWorkspaceChildren = (workspaceMode) => {
       {
         path: 'categorisemgmt',
         name: 'adminCategoriseMgmt',
-        component: views.categoryManagement,
+        component: views.taxonomyManagement,
+        props: { mode: 'category' },
         meta: {
           requiresAuth: true,
           requiredCapability: WORKSPACE_CAPABILITIES.TAXONOMY_MANAGE,
@@ -169,7 +182,8 @@ const createWorkspaceChildren = (workspaceMode) => {
       {
         path: 'tagsmgmt',
         name: 'adminTagsMgmt',
-        component: views.tagManagement,
+        component: views.taxonomyManagement,
+        props: { mode: 'tag' },
         meta: {
           requiresAuth: true,
           requiredCapability: WORKSPACE_CAPABILITIES.TAXONOMY_MANAGE,
@@ -216,6 +230,16 @@ const createWorkspaceChildren = (workspaceMode) => {
 
   if (isAdminWorkspace) {
     routes.push({
+      path: 'announcements',
+      name: 'adminAnnouncements',
+      component: views.announcementManagement,
+      meta: {
+        requiresAuth: true,
+        requiredCapability: WORKSPACE_CAPABILITIES.SITE_MANAGE,
+      },
+    })
+
+    routes.push({
       path: 'site',
       name: 'adminSite',
       component: views.siteOverview,
@@ -235,40 +259,45 @@ const router = createRouter({
     {
       path: '/login',
       name: 'login',
-      component: () => import('@/views/Login.vue'),
+      component: () => import('@/views/auth/Login.vue'),
       meta: { public: true },
     },
     {
       path: '/',
       name: 'layout',
-      component: () => import('@/views/Layout.vue'),
+      component: () => import('@/views/public/PublicLayout.vue'),
       redirect: '/home',
       meta: { requiresAuth: true },
       children: [
         {
           path: 'home',
           name: 'home',
-          component: () => import('@/views/Home.vue'),
+          component: () => import('@/views/public/Home.vue'),
         },
         {
           path: 'tag/:id',
           name: 'tag',
-          component: () => import('@/views/Tags.vue'),
+          component: () => import('@/views/public/Tags.vue'),
         },
         {
           path: 'archive',
           name: 'archive',
-          component: () => import('@/views/Archive.vue'),
+          component: () => import('@/views/public/Archive.vue'),
+        },
+        {
+          path: 'resources',
+          name: 'resources',
+          component: () => import('@/views/public/Resources.vue'),
         },
         {
           path: 'about',
           name: 'about',
-          component: () => import('@/views/About.vue'),
+          component: () => import('@/views/public/About.vue'),
         },
         {
           path: 'moment',
           name: 'moment',
-          component: () => import('@/views/Moment.vue'),
+          component: () => import('@/views/public/Moment.vue'),
         },
         {
           path: 'friendlinks',
@@ -277,39 +306,39 @@ const router = createRouter({
         {
           path: 'forum',
           name: 'forum',
-          component: () => import('@/views/Forum.vue'),
+          component: () => import('@/views/public/Forum.vue'),
         },
         {
           path: 'forum/:id',
           name: 'forumPostDetail',
-          component: () => import('@/views/ForumPostDetail.vue'),
+          component: () => import('@/views/public/ForumPostDetail.vue'),
         },
 
         {
           path: 'article/:id',
           name: 'articleDetail',
-          component: () => import('@/views/ArticleDetail.vue'),
+          component: () => import('@/views/public/ArticleDetail.vue'),
         },
         {
           path: 'category/:id',
           name: 'categoryDetail',
-          component: () => import('@/views/CategoryDetail.vue'),
+          component: () => import('@/views/public/CategoryDetail.vue'),
         },
       ],
     },
     {
       path: '/profile',
-      component: workspaceViewLoaders.user.layout,
+      component: profileViewLoaders.user.layout,
       redirect: '/profile/overview',
       meta: { requiresAuth: true },
-      children: createWorkspaceChildren('user'),
+      children: createProfileChildren('user'),
     },
     {
       path: '/admin',
-      component: workspaceViewLoaders.admin.layout,
+      component: profileViewLoaders.admin.layout,
       redirect: '/admin/overview',
       meta: { requiresAuth: true, requiresAdmin: true },
-      children: createWorkspaceChildren('admin'),
+      children: createProfileChildren('admin'),
     },
   ],
   // 路由切换时自动滚动到页面顶部
@@ -349,6 +378,14 @@ router.beforeEach((to) => {
   }
 
   if (requiresAdmin && !userStore.isAdmin) {
+    return '/profile/overview'
+  }
+
+  if (to.path.startsWith('/profile') && userStore.isAdmin) {
+    return '/admin/overview'
+  }
+
+  if (to.path.startsWith('/admin') && isLoggedIn && !userStore.isAdmin) {
     return '/profile/overview'
   }
 

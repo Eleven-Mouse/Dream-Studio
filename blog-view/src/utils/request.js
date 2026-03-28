@@ -38,7 +38,7 @@ const requestTokenRefresh = async () => {
         { skipAuthRefresh: true, showErrorMessage: false },
       )
       .then((tokenPayload) => {
-        authStore.setTokens(tokenPayload.accessToken, tokenPayload.refreshToken)
+        authStore.setTokens(tokenPayload.accessToken, tokenPayload.refreshToken, { markLogin: false })
         userStore.hydrateFromToken(tokenPayload.accessToken, tokenPayload.username || '')
         return tokenPayload
       })

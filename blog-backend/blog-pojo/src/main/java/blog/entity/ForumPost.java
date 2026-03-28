@@ -25,6 +25,10 @@ public class ForumPost
 
     private String content;
 
+    private Long categoryId;
+
+    private String tags;
+
     private String nickname;
 
     private String email;
@@ -32,6 +36,8 @@ public class ForumPost
     private String avatar;
 
     private Integer viewCount;
+
+    private Integer status;
 
     private Boolean isPinned;
 

@@ -15,8 +15,8 @@ import java.util.List;
 public interface ForumReportMapper
 {
     @Insert("""
-            INSERT INTO forum_report(reporter_id, target_type, target_id, target_title, reason, detail, status, reviewer_id, reviewer_note, create_time, update_time)
-            VALUES(#{reporterId}, #{targetType}, #{targetId}, #{targetTitle}, #{reason}, #{detail}, #{status}, #{reviewerId}, #{reviewerNote}, #{createTime}, #{updateTime})
+            INSERT INTO forum_report(reporter_id, target_type, target_id, target_title, reason, detail, status, target_action, reviewer_id, reviewer_note, create_time, update_time)
+            VALUES(#{reporterId}, #{targetType}, #{targetId}, #{targetTitle}, #{reason}, #{detail}, #{status}, #{targetAction}, #{reviewerId}, #{reviewerNote}, #{createTime}, #{updateTime})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(ForumReport report);
@@ -31,6 +31,7 @@ public interface ForumReportMapper
                    fr.reason,
                    fr.detail,
                    fr.status,
+                   fr.target_action AS targetAction,
                    fr.reviewer_id AS reviewerId,
                    reviewer.nickname AS reviewerName,
                    fr.reviewer_note AS reviewerNote,
@@ -54,6 +55,7 @@ public interface ForumReportMapper
                    fr.reason,
                    fr.detail,
                    fr.status,
+                   fr.target_action AS targetAction,
                    fr.reviewer_id AS reviewerId,
                    reviewer.nickname AS reviewerName,
                    fr.reviewer_note AS reviewerNote,
@@ -78,6 +80,7 @@ public interface ForumReportMapper
                    fr.reason,
                    fr.detail,
                    fr.status,
+                   fr.target_action AS targetAction,
                    fr.reviewer_id AS reviewerId,
                    reviewer.nickname AS reviewerName,
                    fr.reviewer_note AS reviewerNote,
@@ -100,6 +103,7 @@ public interface ForumReportMapper
     @Update("""
             UPDATE forum_report
             SET status = #{status},
+                target_action = #{targetAction},
                 reviewer_id = #{reviewerId},
                 reviewer_note = #{reviewerNote},
                 update_time = #{updateTime}

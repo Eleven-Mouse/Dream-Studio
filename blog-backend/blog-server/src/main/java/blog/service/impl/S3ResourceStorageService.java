@@ -19,6 +19,7 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadBucketRequest;
+import software.amazon.awssdk.services.s3.model.PutBucketPolicyRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
@@ -39,11 +40,11 @@ public class S3ResourceStorageService implements ResourceStorageService
     private final ObjectStorageProperties properties;
 
     @Override
-    public String uploadImage(MultipartFile file)
+    public String uploadResource(MultipartFile file, String folder)
     {
         validateConfiguration();
 
-        String key = buildObjectKey("images", file.getOriginalFilename());
+        String key = buildObjectKey(StringUtils.hasText(folder) ? folder.trim() : "resources", file.getOriginalFilename());
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(properties.getBucket())
                 .key(key)
@@ -128,6 +129,38 @@ public class S3ResourceStorageService implements ResourceStorageService
             } catch (SdkException createException) {
                 throw new IllegalStateException("Failed to access or create object storage bucket", createException);
             }
+        }
+
+        ensurePublicReadPolicy(client);
+    }
+
+    private void ensurePublicReadPolicy(S3Client client)
+    {
+        String bucket = properties.getBucket().trim();
+        String policy = """
+                {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Sid": "PublicReadGetObject",
+                      "Effect": "Allow",
+                      "Principal": "*",
+                      "Action": ["s3:GetObject"],
+                      "Resource": ["arn:aws:s3:::%s/*"]
+                    }
+                  ]
+                }
+                """.formatted(bucket);
+
+        try {
+            client.putBucketPolicy(
+                    PutBucketPolicyRequest.builder()
+                            .bucket(bucket)
+                            .policy(policy)
+                            .build()
+            );
+        } catch (SdkException e) {
+            throw new IllegalStateException("Failed to configure public read policy for object storage bucket", e);
         }
     }
 

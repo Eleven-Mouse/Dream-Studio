@@ -65,10 +65,12 @@ public class ForumController
 
     @PostMapping
     @ApiOperation("发布帖子")
-    public Result<ForumPostVO> createPost(@RequestBody ForumPostDTO forumPostDTO,
+    public Result<ForumPostVO> createPost(@RequestBody Map<String, Object> payload,
                                           HttpServletRequest request,
                                           Authentication authentication)
     {
+        ForumPostDTO forumPostDTO = buildForumPostDTO(payload);
+
         if (authentication == null || authentication.getName() == null) {
             return Result.error(401, "请先登录后再发帖");
         }
@@ -109,6 +111,41 @@ public class ForumController
                                                                  @RequestParam(defaultValue = "5") int limit)
     {
         return Result.success(forumPostService.getSidebarData(currentPostId, limit));
+    }
+
+    private ForumPostDTO buildForumPostDTO(Map<String, Object> payload)
+    {
+        ForumPostDTO forumPostDTO = new ForumPostDTO();
+        forumPostDTO.setTitle(asString(payload.get("title")));
+        forumPostDTO.setSummary(asString(payload.get("summary")));
+        forumPostDTO.setContent(asString(payload.get("content")));
+        forumPostDTO.setCategoryId(asLong(payload.get("categoryId")));
+        forumPostDTO.setTags(asString(payload.get("tags")));
+        return forumPostDTO;
+    }
+
+    private String asString(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private Long asLong(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        String text = String.valueOf(value).trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(text);
     }
 
 }

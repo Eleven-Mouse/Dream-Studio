@@ -12,8 +12,8 @@
     </article>
     <article class="overview-card">
       <span>管理能力</span>
-      <strong>站点设置 + 公告</strong>
-      <p>管理员可以直接维护站点信息，并发布或删除公告。</p>
+      <strong>公告发布 / 删除</strong>
+      <p>公告管理已独立为单独入口，方便集中维护论坛页展示内容。</p>
     </article>
   </div>
 </template>
