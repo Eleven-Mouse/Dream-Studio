@@ -3,7 +3,11 @@
     <div v-if="loading" class="loading-tip">文章加载中...</div>
     <div v-if="error" class="error-tip">{{ error }}</div>
 
+<<<<<<< HEAD
+    <div class="main-content-area">
+=======
     <div class="main-content-area" :class="{ 'catalog-open': catalogDrawerVisible }">
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
       <div class="center">
         <el-card v-if="article" class="article-content-card">
           <div class="article-header-block">
@@ -65,6 +69,26 @@
           />
         </el-card>
       </div>
+<<<<<<< HEAD
+      <div class="sidebar">
+        <el-affix :offset="130" target=".main-content-area">
+          <div class="catalog-card">
+            <div class="catalog-title">目录导航</div>
+            <el-anchor :container="scrollContainer" :offset="70" v-if="catalogList.length > 0">
+              <el-anchor-link
+                v-for="item in catalogList"
+                :key="item.uniqueId"
+                :href="`#${item.uniqueId}`"
+                :title="item.text"
+                :class="`indent-level-${item.level}`"
+                @click.prevent
+              />
+            </el-anchor>
+            <div v-else class="empty-catalog">暂无目录</div>
+          </div>
+        </el-affix>
+      </div>
+=======
 
       <aside class="catalog-side-panel" :class="{ 'is-open': catalogDrawerVisible }">
         <el-affix class="catalog-affix" :offset="6">
@@ -106,6 +130,7 @@
           </div>
         </el-affix>
       </aside>
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     </div>
     <el-divider></el-divider>
     <!-- 评论区 -->
@@ -119,9 +144,14 @@
 </template>
 
 <script setup>
+<<<<<<< HEAD
+import { ref, onMounted, nextTick, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+=======
 import { ref, onMounted, nextTick, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeftBold, Collection, PictureRounded } from '@element-plus/icons-vue'
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 import { fetchArticleById } from '@/api/article.js'
 import { fetchCategories } from '@/api/categories'
 import { fetchTags } from '@/api/tags'
@@ -137,8 +167,11 @@ const article = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const catalogList = ref([])
+<<<<<<< HEAD
+=======
 const catalogDrawerVisible = ref(false)
 const catalogPanelRef = ref(null)
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 const scrollContainer = ref(null)
 const tagOptions = ref([])
 const categoryOptions = ref([])
@@ -154,9 +187,13 @@ const normalizeTags = (tags) => {
       .map((item) => {
         if (typeof item === 'string' || typeof item === 'number') {
           const value = String(item).trim()
+<<<<<<< HEAD
+          return value ? { raw: value, id: /^\d+$/.test(value) ? Number(value) : null, name: value } : null
+=======
           return value
             ? { raw: value, id: /^\d+$/.test(value) ? Number(value) : null, name: value }
             : null
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         }
         if (item && typeof item === 'object') {
           const id = Number(item.id ?? item.tagId)
@@ -278,6 +315,8 @@ const onGetCatalog = (list) => {
     }
   })
 }
+<<<<<<< HEAD
+=======
 
 const handleCatalogNavigate = (headingId) => {
   const target = document.getElementById(headingId)
@@ -310,6 +349,7 @@ const handleDocumentClick = (event) => {
   catalogDrawerVisible.value = false
 }
 
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 const formatTime = (datetime) => {
   if (!datetime) return '--'
   const date = new Date(datetime)
@@ -320,12 +360,19 @@ const formatTime = (datetime) => {
   })
 }
 
+<<<<<<< HEAD
+onMounted(async () => {
+  const el = document.querySelector('.main-scroll-container')
+  scrollContainer.value = el ? el : window
+  const articleId = route.params.id
+=======
 const loadArticle = async (articleId) => {
   error.value = null
   article.value = null
   catalogList.value = []
   catalogDrawerVisible.value = true
 
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
   if (!articleId) {
     error.value = '未找到文章ID'
     return
@@ -334,6 +381,10 @@ const loadArticle = async (articleId) => {
   loading.value = true
   try {
     const [data] = await Promise.all([fetchArticleById(articleId), loadTaxonomyOptions()])
+<<<<<<< HEAD
+    console.log('后端返回的文章详情:', data)
+=======
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     article.value = data || null
   } catch (err) {
     error.value = '加载文章失败，请稍后再试。'
@@ -341,6 +392,9 @@ const loadArticle = async (articleId) => {
   } finally {
     loading.value = false
   }
+<<<<<<< HEAD
+})
+=======
 }
 
 onMounted(() => {
@@ -360,6 +414,7 @@ watch(
   },
   { immediate: true },
 )
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 </script>
 
 <style scoped>
@@ -370,14 +425,33 @@ watch(
   --article-surface-radius: 24px;
   --article-surface-min-height: 380px;
   --article-content-width: 900px;
+<<<<<<< HEAD
+=======
   --catalog-panel-width: 280px;
   --catalog-panel-gap: 0px;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
   width: min(1180px, 100%);
   margin: 0 auto;
 }
 
 .main-content-area {
   width: 100%;
+<<<<<<< HEAD
+  display: grid;
+  grid-template-columns: minmax(0, var(--article-content-width)) 240px;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 28px;
+}
+
+.center {
+  min-width: 0;
+}
+
+.sidebar {
+  width: 100%;
+  min-width: 0;
+=======
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -435,13 +509,19 @@ watch(
 .catalog-affix-shell.is-open .catalog-panel-body {
   opacity: 1;
   pointer-events: auto;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 }
 
 .catalog-card {
   max-height: calc(100vh - 200px);
   min-height: var(--article-surface-min-height);
   overflow-y: auto;
+<<<<<<< HEAD
+  padding: 24px 20px;
+  border: 1px solid var(--article-surface-border);
+=======
 
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
   border-radius: var(--article-surface-radius);
   background: var(--article-surface-bg);
   box-shadow: var(--article-surface-shadow);
@@ -455,6 +535,8 @@ watch(
   }
 }
 
+<<<<<<< HEAD
+=======
 .catalog-drawer-card {
   width: var(--catalog-panel-width);
   height: 100%;
@@ -515,6 +597,7 @@ watch(
   transform: rotate(180deg);
 }
 
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 .article-content-card {
   width: 100%;
   min-height: var(--article-surface-min-height);
@@ -670,20 +753,26 @@ watch(
 .catalog-title {
   margin-bottom: 16px;
   color: var(--app-text-color);
+<<<<<<< HEAD
+=======
   display: flex;
   align-items: center;
   gap: 8px;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
   font-size: 18px;
   font-weight: 700;
   line-height: 1.3;
   padding-left: 10px;
   border-left: 4px solid #389747;
 }
+<<<<<<< HEAD
+=======
 
 .catalog-title-icon {
   color: #389747;
   font-size: 18px;
 }
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 /* 目录层级缩进样式 */
 :deep(.el-anchor__link) {
   font-size: 14px;
@@ -726,6 +815,10 @@ watch(
 }
 @media screen and (max-width: 900px) {
   .main-content-area {
+<<<<<<< HEAD
+    grid-template-columns: 1fr;
+    gap: 18px;
+=======
     display: block;
   }
 
@@ -760,6 +853,7 @@ watch(
     width: 56px;
     min-width: 56px;
     height: 48px;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
   }
 
   .article-detail-title {
@@ -797,7 +891,11 @@ watch(
 @keyframes fadeIn {
   from {
     opacity: 0;
+<<<<<<< HEAD
+    transform: translateY(20px);
+=======
     transform: translateY(0px);
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
   }
   to {
     opacity: 1;

@@ -18,6 +18,10 @@ public class LoginResponse
     private String avatar;
     private String email;
     private String phone;
+<<<<<<< HEAD
+
+    public LoginResponse(String accessToken, String refreshToken, String username, Boolean needsPasswordSetup)
+=======
     private String role;
 
     public LoginResponse(String accessToken,
@@ -25,13 +29,17 @@ public class LoginResponse
                          String username,
                          Boolean needsPasswordSetup,
                          String role)
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
         this.username = username;
         this.needsPasswordSetup = needsPasswordSetup;
         this.needsRegistration = false;
+<<<<<<< HEAD
+=======
         this.role = role;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     }
 
     public static LoginResponse githubRegistrationPending(String registrationToken,
@@ -52,7 +60,10 @@ public class LoginResponse
         response.setAvatar(avatar);
         response.setEmail(email);
         response.setPhone(phone);
+<<<<<<< HEAD
+=======
         response.setRole("USER");
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         return response;
     }
 }
