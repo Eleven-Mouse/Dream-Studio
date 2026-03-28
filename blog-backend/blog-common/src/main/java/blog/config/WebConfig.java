@@ -5,7 +5,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.*;
 
 import java.io.File;
+<<<<<<< HEAD
+=======
 import java.util.List;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 
 /**
  * Web配置类
@@ -39,7 +42,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(@org.springframework.lang.NonNull ResourceHandlerRegistry registry) {
         // 配置静态资源路径（避免与API路径冲突）
+<<<<<<< HEAD
+        registry.addResourceHandler("/static/**", "/css/**", "/js/**", "/fonts/**")
+=======
         registry.addResourceHandler("/static/**", "/assets/**", "/css/**", "/js/**", "/fonts/**")
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
                 .addResourceLocations("classpath:/static/", "classpath:/public/", "classpath:/META-INF/resources/")
                 .setCachePeriod(31536000);
 
@@ -60,7 +67,11 @@ public class WebConfig implements WebMvcConfigurer {
                 : uploadDir + File.separator;
 
         // 2. 映射 URL -> 本地磁盘
+<<<<<<< HEAD
+        // 访问 http://localhost:8081/images/abc.jpg -> 去本地 uploadDir/abc.jpg 找
+=======
         // 访问 http://localhost:8080/images/abc.jpg -> 去本地 uploadDir/abc.jpg 找
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         registry.addResourceHandler("/images/**")
                 .addResourceLocations("file:" + path);
 
@@ -70,6 +81,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     }
 
+<<<<<<< HEAD
+=======
     @Override
     public void addViewControllers(@org.springframework.lang.NonNull ViewControllerRegistry registry) {
         List.of(
@@ -103,5 +116,6 @@ public class WebConfig implements WebMvcConfigurer {
                 .forEach(path -> registry.addViewController(path).setViewName("forward:/index.html"));
     }
 
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 
 }
