@@ -5,16 +5,25 @@ import blog.dto.Login.GithubRegistrationSession;
 import blog.entity.UserAccount;
 import blog.mapper.UserAccountMapper;
 import blog.service.UserAccountService;
+<<<<<<< HEAD
+=======
 import blog.vo.AdminUserVO;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 import blog.vo.UserProfileVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+<<<<<<< HEAD
+import org.springframework.util.StringUtils;
+
+import java.time.LocalDateTime;
+=======
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 
 @Service
 public class UserAccountServiceImpl implements UserAccountService
@@ -159,7 +168,11 @@ public class UserAccountServiceImpl implements UserAccountService
     public UserProfileVO getProfileByUsername(String username)
     {
         UserAccount userAccount = findByUsername(username);
+<<<<<<< HEAD
+        if (userAccount != null) {
+=======
         if (userAccount != null && !Boolean.FALSE.equals(userAccount.getStatus())) {
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
             return new UserProfileVO(
                     userAccount.getId(),
                     userAccount.getUsername(),
@@ -244,6 +257,8 @@ public class UserAccountServiceImpl implements UserAccountService
     }
 
     @Override
+<<<<<<< HEAD
+=======
     public List<AdminUserVO> listActiveUsers()
     {
         return userAccountMapper.selectActiveUsers().stream()
@@ -320,6 +335,7 @@ public class UserAccountServiceImpl implements UserAccountService
     }
 
     @Override
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     public void ensureAdminAccount()
     {
         UserAccount existingAdmin = userAccountMapper.selectByUsername("admin");
@@ -443,6 +459,14 @@ public class UserAccountServiceImpl implements UserAccountService
         }
         return registrationSession.getGithubLogin() + " 的 GitHub 主页";
     }
+<<<<<<< HEAD
+    @Override
+    public UserAccount findById(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        return userAccountMapper.selectById(userId);
+=======
 
     private UserAccount requireActiveUser(String username)
     {
@@ -495,5 +519,6 @@ public class UserAccountServiceImpl implements UserAccountService
                 userAccount.getCreateTime(),
                 userAccount.getLastLoginTime()
         );
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     }
 }

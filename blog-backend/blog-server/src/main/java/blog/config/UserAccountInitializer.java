@@ -61,6 +61,11 @@ public class UserAccountInitializer implements CommandLineRunner
                       email VARCHAR(200) DEFAULT NULL COMMENT '邮箱',
                       avatar VARCHAR(500) DEFAULT NULL COMMENT '头像地址',
                       view_count INT NOT NULL DEFAULT 0 COMMENT '浏览次数',
+<<<<<<< HEAD
+                      comment_count INT NOT NULL DEFAULT 0 COMMENT '评论次数',
+                      like_count INT NOT NULL DEFAULT 0 COMMENT '点赞数',
+=======
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
                       is_pinned TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否置顶',
                       is_featured TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否加精',
                       create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -113,6 +118,13 @@ public class UserAccountInitializer implements CommandLineRunner
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户通知表'
                     """);
 
+<<<<<<< HEAD
+            ensureColumnExists("article", "author_id", "ALTER TABLE article ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
+            ensureColumnExists("forum_post", "author_id", "ALTER TABLE forum_post ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
+            ensureColumnExists("forum_post", "comment_count", "ALTER TABLE forum_post ADD COLUMN comment_count INT NOT NULL DEFAULT 0 COMMENT '评论次数' AFTER view_count");
+            ensureColumnExists("forum_post", "like_count", "ALTER TABLE forum_post ADD COLUMN like_count INT NOT NULL DEFAULT 0 COMMENT '点赞数' AFTER comment_count");
+            ensureColumnExists("forum_post", "status", "ALTER TABLE forum_post ADD COLUMN status INT NOT NULL DEFAULT 1 COMMENT '状态' AFTER is_featured");
+=======
             jdbcTemplate.execute("""
                     CREATE TABLE IF NOT EXISTS announcement (
                       id BIGINT NOT NULL AUTO_INCREMENT COMMENT '公告ID',
@@ -145,6 +157,7 @@ public class UserAccountInitializer implements CommandLineRunner
             ensureColumnExists("article", "author_id", "ALTER TABLE article ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
             ensureColumnExists("moment", "author_id", "ALTER TABLE moment ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
             ensureColumnExists("forum_post", "author_id", "ALTER TABLE forum_post ADD COLUMN author_id BIGINT DEFAULT NULL COMMENT '作者用户ID' AFTER id");
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
             ensureColumnExists("comment", "user_id", "ALTER TABLE comment ADD COLUMN user_id BIGINT DEFAULT NULL COMMENT '评论用户ID' AFTER id");
             ensureColumnExists("user_account", "phone", "ALTER TABLE user_account ADD COLUMN phone VARCHAR(30) DEFAULT NULL COMMENT '手机号' AFTER email");
 
@@ -152,11 +165,16 @@ public class UserAccountInitializer implements CommandLineRunner
             Long adminId = userAccountService.ensureDefaultAdminAndGetId();
             if (adminId != null) {
                 jdbcTemplate.update("UPDATE article SET author_id = ? WHERE author_id IS NULL", adminId);
+<<<<<<< HEAD
+                jdbcTemplate.update("UPDATE forum_post SET author_id = ? WHERE author_id IS NULL", adminId);
+            }
+=======
                 jdbcTemplate.update("UPDATE moment SET author_id = ? WHERE author_id IS NULL", adminId);
                 jdbcTemplate.update("UPDATE forum_post SET author_id = ? WHERE author_id IS NULL", adminId);
                 jdbcTemplate.update("UPDATE user_account SET role = 'ADMIN' WHERE username = 'admin'");
             }
             ensureSystemConfigDefaults();
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
             log.info("已确保 admin 测试账号存在");
         } catch (Exception e) {
             log.warn("初始化 admin 测试账号失败：{}", e.getMessage());
@@ -176,6 +194,8 @@ public class UserAccountInitializer implements CommandLineRunner
             jdbcTemplate.execute(alterSql);
         }
     }
+<<<<<<< HEAD
+=======
 
     private void ensureSystemConfigDefaults()
     {
@@ -203,4 +223,5 @@ public class UserAccountInitializer implements CommandLineRunner
             );
         }
     }
+>>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 }
