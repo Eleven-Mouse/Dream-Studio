@@ -27,6 +27,8 @@ public class ForumReport
 
     private String status;
 
+    private String targetAction;
+
     private Long reviewerId;
 
     private String reviewerNote;

@@ -11,10 +11,7 @@ import blog.mapper.ForumPostMapper;
 import blog.mapper.ForumReportMapper;
 import blog.mapper.UserAccountMapper;
 import blog.mapper.UserNotificationMapper;
-<<<<<<< HEAD
-=======
 import blog.service.AccessControlService;
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 import blog.service.ForumPostService;
 import blog.service.UserAccountService;
 import blog.service.UserCenterService;
@@ -58,12 +55,9 @@ public class UserCenterServiceImpl implements UserCenterService
     @Autowired
     private ForumPostService forumPostService;
 
-<<<<<<< HEAD
-=======
     @Autowired
     private AccessControlService accessControlService;
 
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     @Override
     public UserCenterOverviewVO getOverview(String username)
     {
@@ -78,11 +72,7 @@ public class UserCenterServiceImpl implements UserCenterService
                 : forumReportMapper.selectByReporterId(currentUser.getId(), CENTER_LIST_LIMIT);
         List<UserNotificationVO> notifications = userNotificationMapper.selectByUserId(currentUser.getId(), CENTER_LIST_LIMIT);
         List<ForumPostVO> moderationPosts = admin
-<<<<<<< HEAD
-                ? forumPostMapper.selectPage("latest", 0, CENTER_LIST_LIMIT, null, null, false)
-=======
-                ? forumPostMapper.selectPage("latest", 0, CENTER_LIST_LIMIT, null, null, null, false)
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+                ? forumPostMapper.selectPage("latest", 0, CENTER_LIST_LIMIT, null, null, null, false, null)
                 : Collections.emptyList();
 
         UserCenterOverviewVO overview = new UserCenterOverviewVO();
@@ -107,7 +97,7 @@ public class UserCenterServiceImpl implements UserCenterService
         UserAccount currentUser = requireUser(username);
         validateReportRequest(request);
 
-        ForumPostVO targetPost = forumPostMapper.selectById(request.getTargetId());
+        ForumPostVO targetPost = forumPostMapper.selectById(request.getTargetId(), 1);
         if (targetPost == null) {
             throw new IllegalArgumentException("被举报的帖子不存在");
         }
@@ -121,16 +111,13 @@ public class UserCenterServiceImpl implements UserCenterService
         report.setReason(request.getReason().trim().toUpperCase());
         report.setDetail(trimToNull(request.getDetail()));
         report.setStatus("PENDING");
+        report.setTargetAction("NONE");
         report.setCreateTime(now);
         report.setUpdateTime(now);
         forumReportMapper.insert(report);
 
         String reporterName = StringUtils.hasText(currentUser.getNickname()) ? currentUser.getNickname() : currentUser.getUsername();
-<<<<<<< HEAD
-        List<UserAccount> admins = userAccountMapper.selectByRole("ADMIN");
-=======
         List<UserAccount> admins = userAccountMapper.selectAdmins();
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         for (UserAccount admin : admins) {
             createNotification(
                     admin.getId(),
@@ -159,11 +146,7 @@ public class UserCenterServiceImpl implements UserCenterService
     @Override
     public ForumReportVO reviewReport(String username, Long reportId, ForumReportReviewDTO request)
     {
-<<<<<<< HEAD
-        UserAccount currentUser = requireAdmin(username);
-=======
         UserAccount currentUser = accessControlService.requireAdmin(username);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         if (request == null || !StringUtils.hasText(request.getStatus())) {
             throw new IllegalArgumentException("处理状态不能为空");
         }
@@ -173,14 +156,19 @@ public class UserCenterServiceImpl implements UserCenterService
             throw new IllegalArgumentException("仅支持标记为 RESOLVED 或 REJECTED");
         }
 
+        String targetAction = normalizeTargetAction(status, request.getTargetAction());
+
         ForumReportVO existingReport = forumReportMapper.selectById(reportId);
         if (existingReport == null) {
             throw new IllegalArgumentException("举报记录不存在");
         }
 
+        applyReviewAction(existingReport, status, targetAction);
+
         ForumReport update = new ForumReport();
         update.setId(reportId);
         update.setStatus(status);
+        update.setTargetAction(targetAction);
         update.setReviewerId(currentUser.getId());
         update.setReviewerNote(trimToNull(request.getReviewerNote()));
         update.setUpdateTime(LocalDateTime.now());
@@ -190,7 +178,7 @@ public class UserCenterServiceImpl implements UserCenterService
                 existingReport.getReporterId(),
                 "REPORT_REVIEWED",
                 "你的举报已有处理结果",
-                "你对《" + existingReport.getTargetTitle() + "》的举报已被标记为 " + statusLabel(status),
+                buildReviewNotificationContent(existingReport.getTargetTitle(), status, targetAction),
                 existingReport.getTargetType(),
                 existingReport.getTargetId(),
                 existingReport.getId()
@@ -202,22 +190,14 @@ public class UserCenterServiceImpl implements UserCenterService
     @Override
     public void updateAdminPostMeta(String username, Long postId, ForumPostAdminUpdateDTO request)
     {
-<<<<<<< HEAD
-        requireAdmin(username);
-=======
         accessControlService.requireAdmin(username);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         forumPostService.updateAdminPostMeta(postId, request);
     }
 
     @Override
     public void deleteAdminPost(String username, Long postId)
     {
-<<<<<<< HEAD
-        requireAdmin(username);
-=======
         accessControlService.requireAdmin(username);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         forumPostService.deletePost(postId);
     }
 
@@ -261,39 +241,66 @@ public class UserCenterServiceImpl implements UserCenterService
         userNotificationMapper.insert(notification);
     }
 
+    private void applyReviewAction(ForumReportVO existingReport, String status, String targetAction)
+    {
+        if (!"RESOLVED".equals(status) || "NONE".equals(targetAction)) {
+            return;
+        }
+        if (!"forum-post".equalsIgnoreCase(existingReport.getTargetType())) {
+            throw new IllegalArgumentException("当前举报目标暂不支持该处理动作");
+        }
+
+        if ("UNPUBLISH".equals(targetAction)) {
+            forumPostService.updatePostStatus(existingReport.getTargetId(), 0);
+            return;
+        }
+        if ("DELETE".equals(targetAction)) {
+            forumPostService.deletePost(existingReport.getTargetId());
+            return;
+        }
+
+        throw new IllegalArgumentException("不支持的处理动作");
+    }
+
+    private String normalizeTargetAction(String status, String targetAction)
+    {
+        if (!"RESOLVED".equals(status)) {
+            return "NONE";
+        }
+
+        if (!StringUtils.hasText(targetAction)) {
+            throw new IllegalArgumentException("请先选择处理动作");
+        }
+
+        String normalizedAction = targetAction.trim().toUpperCase();
+        if (!"UNPUBLISH".equals(normalizedAction) && !"DELETE".equals(normalizedAction)) {
+            throw new IllegalArgumentException("仅支持设为不公开或删除内容");
+        }
+        return normalizedAction;
+    }
+
+    private String buildReviewNotificationContent(String targetTitle, String status, String targetAction)
+    {
+        if ("REJECTED".equals(status)) {
+            return "你对《" + targetTitle + "》的举报已被驳回";
+        }
+
+        return "你对《" + targetTitle + "》的举报已处理，管理员已" + targetActionLabel(targetAction);
+    }
+
     private UserAccount requireUser(String username)
     {
-<<<<<<< HEAD
-        UserAccount user = userAccountService.findByUsername(username);
-        if (user == null) {
-            throw new IllegalArgumentException("当前用户不存在");
-        }
-        return user;
-=======
         return accessControlService.requireUser(username);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     }
 
     private UserAccount requireAdmin(String username)
     {
-<<<<<<< HEAD
-        UserAccount user = requireUser(username);
-        if (!isAdmin(user)) {
-            throw new IllegalArgumentException("当前用户没有管理员权限");
-        }
-        return user;
-=======
         return accessControlService.requireAdmin(username);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     }
 
     private boolean isAdmin(UserAccount user)
     {
-<<<<<<< HEAD
-        return user != null && "ADMIN".equalsIgnoreCase(user.getRole());
-=======
         return accessControlService.isAdmin(user);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     }
 
     private String trimToNull(String value)
@@ -318,5 +325,16 @@ public class UserCenterServiceImpl implements UserCenterService
             return "已驳回";
         }
         return status;
+    }
+
+    private String targetActionLabel(String targetAction)
+    {
+        if ("UNPUBLISH".equals(targetAction)) {
+            return "设为不公开";
+        }
+        if ("DELETE".equals(targetAction)) {
+            return "删除该帖子";
+        }
+        return statusLabel(targetAction);
     }
 }

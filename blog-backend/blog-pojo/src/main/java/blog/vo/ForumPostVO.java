@@ -25,6 +25,14 @@ public class ForumPostVO
 
     private String content;
 
+    private Long categoryId;
+
+    private String categoryName;
+
+    private String tagIds;
+
+    private String tags;
+
     private String nickname;
 
     private String avatar;
@@ -36,6 +44,8 @@ public class ForumPostVO
     private Integer viewCount;
 
     private Integer commentCount;
+
+    private Integer status;
 
     private Boolean isPinned;
 

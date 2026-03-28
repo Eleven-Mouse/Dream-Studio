@@ -38,7 +38,7 @@ public class MomentController
 
         try {
             PageHelper.startPage(page, size, "publish_time desc");
-            List<MomentVO> moments = momentService.listAllMoments();
+            List<MomentVO> moments = momentService.listPublishedMoments();
             PageInfo<MomentVO> pageInfo = new PageInfo<>(moments);
 
 

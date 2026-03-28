@@ -2,11 +2,7 @@
   <div class="header-wrapper" :class="{ 'is-hidden': isHeaderHidden }">
     <div class="header-container">
       <div class="logo">
-<<<<<<< HEAD
-        <a href="/home">Dream-studio </a>
-=======
         <router-link to="/home">Dream-studio</router-link>
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
       </div>
       <div class="search-bar">
         <el-autocomplete
@@ -35,11 +31,7 @@
         <el-menu-item index="/home"
           ><el-icon><HomeFilled /></el-icon>Home</el-menu-item
         >
-<<<<<<< HEAD
-        <el-sub-menu index="/categories">
-=======
         <el-sub-menu index="categories-menu">
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
           <template #title
             ><el-icon><Grid /></el-icon>categories</template
           >
@@ -61,32 +53,30 @@
         <el-menu-item index="/archive"
           ><el-icon><WalletFilled /></el-icon>Archive</el-menu-item
         >
+        <el-menu-item index="/resources"
+          ><el-icon><FolderOpened /></el-icon>Resources</el-menu-item
+        >
         <el-menu-item index="/about"
           ><el-icon><UserFilled /></el-icon>About</el-menu-item
         >
       </el-menu>
-      <div class="github-link">
-        <a href="https://github.com/Eleven-Mouse/Dream-Studio" target="_blank">
-          <span>GitHub</span> <el-icon size="15"><Promotion /></el-icon>
-        </a>
-      </div>
+
       <div class="user-entry" @click="goToProfile">
-        <el-badge v-if="isAdmin" value="Admin" class="user-badge">
-          <el-avatar :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
+        <el-badge v-if="canViewAdminDashboard" value="Admin" class="user-badge">
+          <el-avatar shape="square" :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
         </el-badge>
-        <el-avatar v-else :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
+        <el-avatar v-else shape="square" :size="36" :src="userAvatar">{{ userInitial }}</el-avatar>
         <div class="user-meta">
           <span class="user-name">{{ displayName }}</span>
-<<<<<<< HEAD
-          <small>{{ isAdmin ? '后台管理' : isLoggedIn ? '个人中心' : '游客模式' }}</small>
-=======
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         </div>
       </div>
-      <el-button v-if="isLoggedIn" text class="logout-button" @click.stop="handleLogout"
-        >退出登录</el-button
-      >
+
       <theme-switcher class="theme-switch" />
+      <div class="github-link">
+        <a href="https://github.com/Eleven-Mouse/Dream-Studio" target="_blank">
+          <span><h6>GitHub</h6></span> <el-icon size="15"><Promotion /></el-icon>
+        </a>
+      </div>
     </div>
     <!-- 页面滚动进度条 -->
     <el-progress
@@ -100,19 +90,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted, computed } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed, h } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCategories } from '@/api/categories'
 import { fetchArticles } from '@/api/article.js'
 import { useAuthStore } from '@/store/auth'
 import { useUserStore } from '@/store/user'
 import { openAdminApp } from '@/utils/adminBridge'
+import { WORKSPACE_CAPABILITIES } from '@/utils/workspaceCapabilities'
 import {
   Search,
   HomeFilled,
   Grid,
   UserFilled,
   WalletFilled,
+  FolderOpened,
   Promotion,
   Comment,
   ChatDotRound,
@@ -139,7 +131,9 @@ const isLoggedIn = computed(() => userStore.isLoggedIn)
 const displayName = computed(() => currentProfile.value.nickname)
 const userAvatar = computed(() => currentProfile.value.avatar)
 const userInitial = computed(() => displayName.value?.slice(0, 1)?.toUpperCase() || 'D')
-const isAdmin = computed(() => userStore.isAdmin)
+const canViewAdminDashboard = computed(() =>
+  userStore.hasCapability(WORKSPACE_CAPABILITIES.DASHBOARD_VIEW),
+)
 
 // 获取分类列表
 const loadCategories = async () => {
@@ -159,11 +153,7 @@ watch(
     } else if (newPath.startsWith('/forum')) {
       activeIndex.value = '/forum'
     } else if (newPath.startsWith('/category/')) {
-<<<<<<< HEAD
-      activeIndex.value = '/categories'
-=======
       activeIndex.value = 'categories-menu'
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
       currentCategoryId.value = route.params.id
     } else {
       activeIndex.value = newPath
@@ -290,24 +280,17 @@ const handleSelectArticle = (item) => {
 }
 
 const goToProfile = () => {
-  if (isAdmin.value) {
+  if (canViewAdminDashboard.value) {
     openAdminApp({
       isAdmin: true,
       accessToken: authStore.accessToken,
       router,
-<<<<<<< HEAD
-=======
-      targetPath: '/admin/articlemgmt',
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+      targetPath: '/admin/overview',
     })
     return
   }
 
-<<<<<<< HEAD
-  router.push('/profile')
-=======
-  router.push('/profile/articlemgmt')
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+  router.push('/profile/overview')
 }
 
 const handleLogout = async () => {
@@ -340,10 +323,6 @@ const handleLogout = async () => {
   color: var(--app-text-color);
   text-decoration: none;
   margin-right: 20px;
-<<<<<<< HEAD
-  background-image: url('../assets/\ \(4\).png');
-=======
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 }
 
 .search-bar {
@@ -398,10 +377,6 @@ const handleLogout = async () => {
   margin-left: 16px;
 }
 
-.logout-button {
-  margin-left: 10px;
-}
-
 .user-entry {
   display: flex;
   align-items: center;
@@ -419,14 +394,19 @@ const handleLogout = async () => {
 
 .user-meta {
   display: flex;
+  min-width: 0;
   flex-direction: column;
-  line-height: 1.2;
+  line-height: 0.8;
 }
 
 .user-name {
+  display: block;
   color: var(--app-text-color);
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-meta small {

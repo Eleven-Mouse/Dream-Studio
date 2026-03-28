@@ -1,14 +1,33 @@
 import request from '@/utils/request'
 
-const uploadBaseUrl = import.meta.env.VITE_APP_UPLOAD_URL || ''
+export function fetchPublicResources() {
+  return request({
+    url: '/resources',
+    method: 'get',
+  })
+}
+
+export function fetchMyResources() {
+  return request({
+    url: '/user/resources',
+    method: 'get',
+  })
+}
+
+export function fetchAdminResources(status) {
+  return request({
+    url: '/user/admin/resources',
+    method: 'get',
+    params: status ? { status } : undefined,
+  })
+}
 
 export function uploadResourceFile(formData, config = {}) {
   const { headers = {}, ...restConfig } = config
 
   return request({
     ...restConfig,
-    baseURL: '',
-    url: '/admin/upload/images',
+    url: '/user/resources',
     method: 'post',
     data: formData,
     headers: {
@@ -18,16 +37,25 @@ export function uploadResourceFile(formData, config = {}) {
   })
 }
 
-export function deleteResourceFile(url) {
+export function deleteResourceFile(resourceId) {
   return request({
-    baseURL: '',
-    url: '/admin/upload/images',
+    url: `/user/resources/${resourceId}`,
     method: 'delete',
-    params: { url },
   })
 }
 
-export function resolveUploadedResourceUrl(path) {
-  if (!path) return ''
-  return path.startsWith('http') ? path : `${uploadBaseUrl}${path}`
+export function reviewResourceFile(resourceId, data) {
+  return request({
+    url: `/user/admin/resources/${resourceId}/review`,
+    method: 'put',
+    data,
+  })
+}
+
+export function recordResourceDownload(resourceId) {
+  return request({
+    url: `/resources/${resourceId}/downloads`,
+    method: 'post',
+    showErrorMessage: false,
+  })
 }

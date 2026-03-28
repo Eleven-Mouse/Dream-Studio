@@ -15,6 +15,9 @@
             fp.title,
             fp.summary,
             fp.content,
+            fp.category_id AS categoryId,
+            c.name AS categoryName,
+            fp.tags AS tagIds,
             fp.nickname,
             fp.avatar,
             ua.nickname AS authorNickname,
@@ -26,6 +29,7 @@
                 WHERE c.page = CONCAT('forum-post-', fp.id)
                   AND c.status = TRUE
             ) AS commentCount,
+            fp.status,
             fp.is_pinned AS isPinned,
             fp.is_featured AS isFeatured,
             fp.create_time AS createTime,
@@ -58,6 +62,7 @@
                 )
             ) AS lastActivityTime
         FROM forum_post fp
+        LEFT JOIN category c ON fp.category_id = c.id
         LEFT JOIN user_account ua ON fp.author_id = ua.id
 >>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     </sql>
@@ -76,6 +81,7 @@
                     fp.title LIKE CONCAT('%', #{keyword}, '%')
                     OR fp.summary LIKE CONCAT('%', #{keyword}, '%')
                     OR fp.nickname LIKE CONCAT('%', #{keyword}, '%')
+                    OR c.name LIKE CONCAT('%', #{keyword}, '%')
                 )
             </if>
             <if test="authorId != null">
@@ -87,6 +93,9 @@
             </if>
             <if test="featuredOnly != null and featuredOnly">
                 AND fp.is_featured = TRUE
+            </if>
+            <if test="status != null">
+                AND fp.status = #{status}
             </if>
         </where>
     </sql>
@@ -122,6 +131,9 @@
     <select id="selectById" resultType="blog.vo.ForumPostVO">
         <include refid="ForumPostSelectColumns"/>
         WHERE fp.id = #{id}
+        <if test="status != null">
+            AND fp.status = #{status}
+        </if>
     </select>
 
     <select id="selectByAuthorId" resultType="blog.vo.ForumPostVO">
@@ -131,13 +143,52 @@
         LIMIT #{limit}
     </select>
 
+    <insert id="insert" parameterType="blog.entity.ForumPost" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO forum_post(
+            author_id,
+            title,
+            summary,
+            content,
+            category_id,
+            tags,
+            nickname,
+            email,
+            avatar,
+            view_count,
+            status,
+            is_pinned,
+            is_featured,
+            create_time,
+            update_time,
+            last_activity_time
+        ) VALUES (
+            #{authorId},
+            #{title},
+            #{summary},
+            #{content},
+            #{categoryId},
+            #{tags},
+            #{nickname},
+            #{email},
+            #{avatar},
+            #{viewCount},
+            #{status},
+            #{isPinned},
+            #{isFeatured},
+            #{createTime},
+            #{updateTime},
+            #{lastActivityTime}
+        )
+    </insert>
+
     <update id="updateMeta" parameterType="blog.entity.ForumPost">
         UPDATE forum_post
-        <set>
-            <if test="isPinned != null">is_pinned = #{isPinned},</if>
-            <if test="isFeatured != null">is_featured = #{isFeatured},</if>
+        SET
+            is_pinned = #{isPinned},
+            is_featured = #{isFeatured},
+            category_id = #{categoryId},
+            tags = #{tags},
             update_time = NOW()
-        </set>
         WHERE id = #{id}
     </update>
 

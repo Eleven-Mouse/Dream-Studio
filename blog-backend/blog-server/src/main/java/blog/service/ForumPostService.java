@@ -46,6 +46,8 @@ public interface ForumPostService
 
     void updateAdminPostMeta(Long id, ForumPostAdminUpdateDTO updateDTO);
 
+    void updatePostStatus(Long id, Integer status);
+
     void deletePost(Long id);
 
     void touchLastActivityByPage(String page);

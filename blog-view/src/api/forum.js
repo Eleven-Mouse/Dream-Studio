@@ -41,6 +41,15 @@ export function updateManagedForumPostMeta(id, data) {
   })
 }
 
+export function updateManagedForumPostStatus(id, status) {
+  return request({
+    baseURL: '',
+    url: `/admin/forum/posts/${id}/status`,
+    method: 'put',
+    data: { status },
+  })
+}
+
 export function deleteManagedForumPost(id) {
   return request({
     baseURL: '',

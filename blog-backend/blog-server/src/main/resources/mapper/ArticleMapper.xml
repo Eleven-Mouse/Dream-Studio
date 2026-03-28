@@ -32,6 +32,9 @@
             <if test="isComment != null">
                 is_comment = #{isComment},
             </if>
+            <if test="isFeatured != null">
+                is_featured = #{isFeatured},
+            </if>
             <if test="status != null">
                 status = #{status},
             </if>
@@ -47,7 +50,7 @@
         SELECT
             a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage,
             a.category_id as categoryId, a.tags, a.view_count as viewCount,
-            a.is_comment as isComment, a.status, a.publish_time as publishTime,
+            a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime,
             a.create_time as createTime, a.update_time as updateTime, c.name as categoryName,
             ua.nickname as authorNickname, ua.avatar as authorAvatar
         FROM
@@ -68,7 +71,7 @@
         SELECT
             a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage,
             a.category_id as categoryId, a.tags, a.view_count as viewCount,
-            a.is_comment as isComment, a.status, a.publish_time as publishTime,
+            a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime,
             a.create_time as createTime, a.update_time as updateTime, c.name as categoryName,
             ua.nickname as authorNickname, ua.avatar as authorAvatar
         FROM
@@ -89,7 +92,7 @@
         SELECT
             a.id, a.author_id as authorId, a.title, a.summary, a.cover_image as coverImage,
             a.category_id as categoryId, a.tags, a.view_count as viewCount,
-            a.is_comment as isComment, a.status, a.publish_time as publishTime,
+            a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime,
             a.create_time as createTime, a.update_time as updateTime, c.name as categoryName,
             ua.nickname as authorNickname, ua.avatar as authorAvatar
 

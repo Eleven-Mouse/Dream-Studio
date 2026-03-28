@@ -153,6 +153,7 @@ public class ArticleController
         try {
             validatePublishPayload(articleDTO);
             UserAccount currentUser = accessControlService.requireUser(authentication.getName());
+            sanitizeFeaturedPayload(articleDTO, currentUser);
             articleDTO.setAuthorId(currentUser.getId());
             articleService.saveArticle(articleDTO);
 
@@ -180,7 +181,8 @@ public class ArticleController
                 return Result.error("文章不存在");
             }
 
-            accessControlService.requireAdminOrOwner(authentication.getName(), existingArticle.getAuthorId(), "该文章");
+            UserAccount currentUser = accessControlService.requireAdminOrOwner(authentication.getName(), existingArticle.getAuthorId(), "该文章");
+            sanitizeFeaturedPayload(articleDTO, currentUser);
             articleDTO.setAuthorId(existingArticle.getAuthorId());
             articleService.updateArticle(id, articleDTO);
 
@@ -416,5 +418,14 @@ public class ArticleController
             }
         }
 >>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+    }
+
+    private void sanitizeFeaturedPayload(ArticleDTO articleDTO, UserAccount currentUser)
+    {
+        if (articleDTO == null || accessControlService.isAdmin(currentUser)) {
+            return;
+        }
+
+        articleDTO.setIsFeatured(null);
     }
 }

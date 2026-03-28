@@ -3,10 +3,14 @@
     <div class="card-content">
       <div class="author-row">
         <div class="author-info">
-          <el-avatar :size="34" :src="post.authorAvatar || post.avatar || defaultAvatar" />
-          <div>
-            <strong>{{ post.authorNickname || post.nickname || '匿名用户' }}</strong>
-            <div class="author-time">{{ formatTime(post.createTime) }} · 社区发布</div>
+          <el-avatar
+            shape="square"
+            :size="34"
+            :src="post.authorAvatar || post.avatar || defaultAvatar"
+          />
+          <div class="author-copy">
+            <strong>{{ post.authorNickname || post.nickname }}</strong>
+            <div class="author-time">{{ formatTime(post.createTime) }}</div>
           </div>
         </div>
         <div class="card-badges">
@@ -20,6 +24,10 @@
       </h3>
 
       <p class="post-summary">{{ post.summary || fallbackSummary }}</p>
+
+      <div v-if="post.categoryName" class="category-row">
+        <el-tag size="small" effect="plain" type="info">{{ post.categoryName }}</el-tag>
+      </div>
 
       <div v-if="derivedTags.length" class="tag-list">
         <el-tag v-for="tag in derivedTags" :key="tag" size="small" effect="plain">{{ tag }}</el-tag>
@@ -71,11 +79,29 @@ watch(
 
 const fallbackSummary = computed(() => {
   const content = props.post?.content || ''
-  const plainText = content.replace(/[#>*_~`-]/g, ' ').replace(/\s+/g, ' ').trim()
+  const plainText = content
+    .replace(/[#>*_~`-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
   return plainText.slice(0, 120) || '暂无摘要'
 })
 
 const derivedTags = computed(() => {
+  if (Array.isArray(props.post?.tags)) {
+    return props.post.tags
+      .map((item) => String(item).trim())
+      .filter(Boolean)
+      .slice(0, 4)
+  }
+
+  if (typeof props.post?.tags === 'string' && props.post.tags.trim()) {
+    return props.post.tags
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .slice(0, 4)
+  }
+
   const source = `${props.post?.title || ''} ${props.post?.summary || ''} ${props.post?.content || ''}`
   const matches = source.match(/[A-Za-z][A-Za-z0-9+#.-]{1,18}/g) || []
   return [...new Set(matches.map((item) => item.toLowerCase()))].slice(0, 4)
@@ -146,13 +172,21 @@ const sharePost = async () => {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   color: #6b7280;
   font-size: 14px;
+}
+
+.author-copy {
+  min-width: 0;
 }
 
 .author-info strong {
   display: block;
   color: var(--app-text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .author-time {
@@ -195,6 +229,10 @@ const sharePost = async () => {
   color: #7d7d7d;
   line-height: 1.7;
   margin: 12px 0 14px;
+}
+
+.category-row {
+  margin-bottom: 12px;
 }
 
 .tag-list {

@@ -14,11 +14,10 @@ public interface MomentService
 
     List<MomentVO> listAllMoments();
 
-<<<<<<< HEAD
-=======
+    List<MomentVO> listPublishedMoments();
+
     List<MomentVO> listMomentsByAuthorId(Long authorId);
 
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     void createMoment(MomentDTO momentDTO);
 
     MomentVO getMomentById(Long id);

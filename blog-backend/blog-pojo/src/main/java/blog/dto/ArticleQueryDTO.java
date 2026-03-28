@@ -45,6 +45,11 @@ public class ArticleQueryDTO implements Serializable {
     private Long authorId;
 
     /**
+     * 是否只查询精华文章
+     */
+    private Boolean featuredOnly;
+
+    /**
      * 页码
      */
     private Integer page;

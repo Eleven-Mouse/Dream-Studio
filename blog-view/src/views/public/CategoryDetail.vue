@@ -5,13 +5,12 @@
 </template>
 
 <script setup>
-import CategoriesDirectoryCard from '@/components/taxonomy/CategoriesDirectoryCard.vue'
-
+import CategoriesDirectoryCard from '@/components/CategoriesDirectoryCard.vue'
 </script>
 
 <style scoped>
 .category-detail {
-  width: 650px;
+  width: 700px;
   margin: 40px auto;
   padding: 0 20px;
 }

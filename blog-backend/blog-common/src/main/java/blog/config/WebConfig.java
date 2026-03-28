@@ -90,6 +90,7 @@ public class WebConfig implements WebMvcConfigurer {
                         "/login",
                         "/home",
                         "/archive",
+                        "/resources",
                         "/about",
                         "/moment",
                         "/forum",

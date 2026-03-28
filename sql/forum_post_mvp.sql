@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS `forum_post` (
   `title` varchar(200) NOT NULL COMMENT '帖子标题',
   `summary` varchar(500) DEFAULT NULL COMMENT '帖子摘要',
   `content` longtext NOT NULL COMMENT '帖子正文（Markdown）',
+  `category_id` bigint DEFAULT NULL COMMENT '分类ID',
+  `tags` varchar(256) DEFAULT NULL COMMENT '标签ID列表，逗号分隔',
   `nickname` varchar(100) NOT NULL COMMENT '发帖昵称',
   `email` varchar(200) DEFAULT NULL COMMENT '邮箱',
   `avatar` varchar(500) DEFAULT NULL COMMENT '头像地址',
@@ -13,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `forum_post` (
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `last_activity_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '最后活跃时间',
   PRIMARY KEY (`id`),
+  KEY `idx_forum_post_category_id` (`category_id`),
   KEY `idx_forum_post_activity` (`last_activity_time`),
   KEY `idx_forum_post_featured` (`is_featured`, `is_pinned`),
   KEY `idx_forum_post_create_time` (`create_time`)

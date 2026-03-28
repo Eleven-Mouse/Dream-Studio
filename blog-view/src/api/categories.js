@@ -23,5 +23,3 @@ export function fetchArticlesByCategoryId(id, params) {
     params,
   })
 }
-
-export const getAllCategories = fetchCategories

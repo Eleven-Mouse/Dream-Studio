@@ -32,8 +32,13 @@ public class MomentServiceImpl implements MomentService
     }
 
     @Override
-<<<<<<< HEAD
-=======
+    public List<MomentVO> listPublishedMoments()
+    {
+        log.info("查询已发布动态");
+        return momentMapper.selectPublished();
+    }
+
+    @Override
     public List<MomentVO> listMomentsByAuthorId(Long authorId)
     {
         log.info("查询用户动态，authorId={}", authorId);
@@ -41,7 +46,6 @@ public class MomentServiceImpl implements MomentService
     }
 
     @Override
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     @Transactional
     public void createMoment(MomentDTO momentDTO)
     {
@@ -100,4 +104,3 @@ public class MomentServiceImpl implements MomentService
         return momentMapper.countTotal();
     }
 }
-

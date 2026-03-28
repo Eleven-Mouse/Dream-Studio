@@ -52,9 +52,11 @@ public class ForumController
     @PutMapping("/posts/{id}")
     @ApiOperation("更新论坛帖子状态")
     public Result<String> updatePostMeta(@PathVariable Long id,
-                                         @RequestBody ForumPostAdminUpdateDTO updateDTO,
+                                         @RequestBody Map<String, Object> payload,
                                          Authentication authentication)
     {
+        ForumPostAdminUpdateDTO updateDTO = buildForumPostAdminUpdateDTO(payload);
+
         if (authentication == null || authentication.getName() == null) {
             return Result.error(401, "请先登录");
         }
@@ -65,6 +67,30 @@ public class ForumController
             return Result.success("帖子状态更新成功");
         } catch (IllegalArgumentException e) {
             return Result.error(403, e.getMessage());
+        }
+    }
+
+    @PutMapping("/posts/{id}/status")
+    @ApiOperation("更新论坛帖子可见状态")
+    public Result<String> updatePostStatus(@PathVariable Long id,
+                                           @RequestBody Map<String, Object> payload,
+                                           Authentication authentication)
+    {
+        if (authentication == null || authentication.getName() == null) {
+            return Result.error(401, "请先登录");
+        }
+
+        ForumPostVO existingPost = forumPostService.findPostById(id);
+        if (existingPost == null) {
+            return Result.error("帖子不存在");
+        }
+
+        try {
+            accessControlService.requireAdminOrOwner(authentication.getName(), existingPost.getAuthorId(), "该帖子");
+            forumPostService.updatePostStatus(id, asInteger(payload.get("status")));
+            return Result.success("帖子状态更新成功");
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
         }
     }
 
@@ -89,5 +115,65 @@ public class ForumController
         } catch (IllegalArgumentException e) {
             return Result.error(403, e.getMessage());
         }
+    }
+
+    private ForumPostAdminUpdateDTO buildForumPostAdminUpdateDTO(Map<String, Object> payload)
+    {
+        ForumPostAdminUpdateDTO updateDTO = new ForumPostAdminUpdateDTO();
+        updateDTO.setIsPinned(asBoolean(payload.get("isPinned")));
+        updateDTO.setIsFeatured(asBoolean(payload.get("isFeatured")));
+        updateDTO.setCategoryId(asLong(payload.get("categoryId")));
+        updateDTO.setTags(asString(payload.get("tags")));
+        return updateDTO;
+    }
+
+    private String asString(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? null : text;
+    }
+
+    private Long asLong(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        String text = String.valueOf(value).trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(text);
+    }
+
+    private Boolean asBoolean(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Boolean booleanValue) {
+            return booleanValue;
+        }
+        return Boolean.parseBoolean(String.valueOf(value));
+    }
+
+    private Integer asInteger(Object value)
+    {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        String text = String.valueOf(value).trim();
+        if (text.isEmpty()) {
+            return null;
+        }
+        return Integer.parseInt(text);
     }
 }

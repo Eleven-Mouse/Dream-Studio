@@ -20,10 +20,11 @@
         <el-card class="moment-card" shadow="hover">
           <div class="moment-author-row">
             <div class="moment-author-info">
-              <el-avatar :size="38" :src="getAuthorAvatar(moment)">
+              <el-avatar :size="42" :src="getAuthorAvatar(moment)">
                 {{ getAuthorInitial(moment) }}
               </el-avatar>
-              <div class="moment-author-meta">
+              <div class="moment-author-copy">
+                <span class="moment-author-label">作者</span>
                 <strong>{{ getAuthorName(moment) }}</strong>
               </div>
             </div>
@@ -70,6 +71,7 @@ import { ref, onMounted } from 'vue'
 import { getMoments } from '@/api/moment'
 import { ElMessage } from 'element-plus'
 import defaultAvatar from '@/assets/(5).png'
+
 const moments = ref([])
 const loading = ref(false)
 const error = ref(null)
@@ -100,9 +102,7 @@ const parseImages = (imageStr) => {
 }
 
 const getAuthorName = (moment) => moment?.authorNickname || '匿名用户'
-
 const getAuthorAvatar = (moment) => moment?.authorAvatar || defaultAvatar
-
 const getAuthorInitial = (moment) => getAuthorName(moment).slice(0, 1).toUpperCase()
 
 // 获取动态数据
@@ -133,7 +133,7 @@ onMounted(() => {
 
 <style scoped>
 .moment-container {
-  width: 650px;
+  width: 700px;
   padding: 20px 0;
   border-top: 1px solid var(--card-border-color, #3a3a3a);
   border-bottom: 1px solid var(--card-border-color, #3a3a3a);
@@ -157,11 +157,13 @@ onMounted(() => {
 }
 
 .moment-card {
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
 .moment-author-row {
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
 }
 
 .moment-author-info {
@@ -170,43 +172,38 @@ onMounted(() => {
   gap: 12px;
 }
 
-.moment-author-meta {
+.moment-author-copy {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  gap: 4px;
 }
 
-.moment-author-meta strong {
-  color: #4b5563;
-  font-size: 1rem;
-  line-height: 1.2;
+.moment-author-label {
+  font-size: 12px;
+  color: #909399;
+  letter-spacing: 0.08em;
 }
 
-.moment-author-meta span {
-  color: #9ca3af;
-  font-size: 0.86rem;
-  line-height: 1.2;
+.moment-author-copy strong {
+  font-size: 16px;
+  color: #303133;
 }
 
 .moment-content {
   margin: 0;
-  color: #4b5563;
   line-height: 1.8;
+  color: #303133;
 }
 
 .moment-image {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 12px;
   margin-top: 18px;
 }
 
 @media (max-width: 768px) {
   .moment-container {
-    width: auto;
-    margin: 32px 16px;
-    padding: 20px 0;
+    width: min(650px, calc(100vw - 32px));
   }
 }
 </style>

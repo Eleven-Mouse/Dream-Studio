@@ -1,83 +1,56 @@
 package blog.service.impl;
 
-<<<<<<< HEAD
-import blog.config.BusinessException;
-import blog.dto.ForumPostAdminUpdateDTO;
-import blog.dto.ForumPostDTO;
-import blog.dto.PostCreateDTO;
-import blog.dto.PostQueryDTO;
-import blog.entity.ForumPost;
-
-import blog.mapper.ForumPostMapper;
-import blog.result.PageResult;
-import blog.service.ForumPostService;
-import blog.vo.ForumPostVO;
-import blog.vo.PostDetailVO;
-import blog.vo.PostVO;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
-=======
 import blog.dto.ForumPostAdminUpdateDTO;
 import blog.dto.ForumPostDTO;
 import blog.entity.ForumPost;
+import blog.entity.Tags;
+import blog.mapper.CategoryMapper;
 import blog.mapper.ForumPostMapper;
+import blog.mapper.TagsMapper;
 import blog.service.ForumPostService;
 import blog.service.UserAccountService;
 import blog.vo.ForumPostVO;
 import lombok.extern.slf4j.Slf4j;
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-<<<<<<< HEAD
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-=======
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-<<<<<<< HEAD
-public class ForumPostServiceImpl implements ForumPostService {
-
-=======
 public class ForumPostServiceImpl implements ForumPostService
 {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     private static final int SUMMARY_MAX_LENGTH = 160;
 
     @Autowired
     private ForumPostMapper forumPostMapper;
 
-<<<<<<< HEAD
-    // ========== 原有方法 ==========
+    @Autowired
+    private CategoryMapper categoryMapper;
 
-    @Override
-    public Map<String, Object> listPosts(String sort, int page, int size) {
-=======
+    @Autowired
+    private TagsMapper tagsMapper;
+
     @Override
     public Map<String, Object> listPosts(String sort, int page, int size)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
         int offset = (safePage - 1) * safeSize;
 
-<<<<<<< HEAD
-        List<ForumPostVO> posts = forumPostMapper.selectPage(normalizeSort(sort), offset, safeSize, null, null, false);
-        Long total = forumPostMapper.countPage(null, null, false);
-=======
-        List<ForumPostVO> posts = forumPostMapper.selectPage(normalizeSort(sort), offset, safeSize, null, null, null, false);
-        Long total = forumPostMapper.countPage(null, null, null, false);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+        List<ForumPostVO> posts = forumPostMapper.selectPage(normalizeSort(sort), offset, safeSize, null, null, null, false, 1);
+        attachTagNames(posts);
+        Long total = forumPostMapper.countPage(null, null, null, false, 1);
 
         Map<String, Object> result = new HashMap<>();
         result.put("data", posts);
@@ -88,39 +61,31 @@ public class ForumPostServiceImpl implements ForumPostService
 
     @Override
     @Transactional
-<<<<<<< HEAD
-    public ForumPostVO getPostById(Long id) {
-=======
     public ForumPostVO getPostById(Long id)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
-        ForumPostVO forumPost = forumPostMapper.selectById(id);
+        ForumPostVO forumPost = forumPostMapper.selectById(id, 1);
         if (forumPost == null) {
             return null;
         }
-<<<<<<< HEAD
-=======
 
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         forumPostMapper.incrementViewCount(id);
-        return forumPostMapper.selectById(id);
+        ForumPostVO latestPost = forumPostMapper.selectById(id, 1);
+        attachTagNames(latestPost);
+        return latestPost;
     }
 
     @Override
-<<<<<<< HEAD
-    @Transactional
-    public ForumPostVO createPost(ForumPostDTO forumPostDTO) {
-=======
     public ForumPostVO findPostById(Long id)
     {
-        return forumPostMapper.selectById(id);
+        ForumPostVO forumPost = forumPostMapper.selectById(id, null);
+        attachTagNames(forumPost);
+        return forumPost;
     }
 
     @Override
     @Transactional
     public ForumPostVO createPost(ForumPostDTO forumPostDTO)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         validateForumPost(forumPostDTO);
 
         LocalDateTime now = LocalDateTime.now();
@@ -129,10 +94,13 @@ public class ForumPostServiceImpl implements ForumPostService
         forumPost.setTitle(forumPostDTO.getTitle().trim());
         forumPost.setSummary(buildSummary(forumPostDTO));
         forumPost.setContent(forumPostDTO.getContent().trim());
+        forumPost.setCategoryId(forumPostDTO.getCategoryId());
+        forumPost.setTags(normalizeTagIds(forumPostDTO.getTags()));
         forumPost.setNickname(forumPostDTO.getNickname().trim());
         forumPost.setEmail(trimToNull(forumPostDTO.getEmail()));
         forumPost.setAvatar(trimToNull(forumPostDTO.getAvatar()));
         forumPost.setViewCount(0);
+        forumPost.setStatus(1);
         forumPost.setIsPinned(Boolean.FALSE);
         forumPost.setIsFeatured(Boolean.FALSE);
         forumPost.setCreateTime(now);
@@ -141,32 +109,25 @@ public class ForumPostServiceImpl implements ForumPostService
 
         forumPostMapper.insert(forumPost);
         log.info("论坛帖子发布成功，ID：{}", forumPost.getId());
-        return forumPostMapper.selectById(forumPost.getId());
+        ForumPostVO createdPost = forumPostMapper.selectById(forumPost.getId(), null);
+        attachTagNames(createdPost);
+        return createdPost;
     }
 
     @Override
-<<<<<<< HEAD
-    public Map<String, List<ForumPostVO>> getSidebarData(Long currentPostId, int limit) {
-        int safeLimit = Math.max(limit, 1);
-
-        List<ForumPostVO> latest = forumPostMapper.selectPage("latest", 0, safeLimit, null, currentPostId, false);
-        List<ForumPostVO> recommendations = forumPostMapper.selectPage("featured", 0, safeLimit, null, currentPostId, true);
-
-        if (recommendations.size() < safeLimit) {
-            List<Long> existingIds = recommendations.stream().map(ForumPostVO::getId).collect(Collectors.toList());
-            List<ForumPostVO> hotPosts = forumPostMapper.selectPage("hot", 0, safeLimit * 2, null, currentPostId, false);
-=======
     public Map<String, List<ForumPostVO>> getSidebarData(Long currentPostId, int limit)
     {
         int safeLimit = Math.max(limit, 1);
 
-        List<ForumPostVO> latest = forumPostMapper.selectPage("latest", 0, safeLimit, null, null, currentPostId, false);
-        List<ForumPostVO> recommendations = forumPostMapper.selectPage("featured", 0, safeLimit, null, null, currentPostId, true);
+        List<ForumPostVO> latest = forumPostMapper.selectPage("latest", 0, safeLimit, null, null, currentPostId, false, 1);
+        List<ForumPostVO> recommendations = forumPostMapper.selectPage("featured", 0, safeLimit, null, null, currentPostId, true, 1);
+        attachTagNames(latest);
+        attachTagNames(recommendations);
 
         if (recommendations.size() < safeLimit) {
             List<Long> existingIds = recommendations.stream().map(ForumPostVO::getId).collect(Collectors.toList());
-            List<ForumPostVO> hotPosts = forumPostMapper.selectPage("hot", 0, safeLimit * 2, null, null, currentPostId, false);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+            List<ForumPostVO> hotPosts = forumPostMapper.selectPage("hot", 0, safeLimit * 2, null, null, currentPostId, false, 1);
+            attachTagNames(hotPosts);
             for (ForumPostVO hotPost : hotPosts) {
                 if (recommendations.size() >= safeLimit) {
                     break;
@@ -185,23 +146,15 @@ public class ForumPostServiceImpl implements ForumPostService
     }
 
     @Override
-<<<<<<< HEAD
-    public Map<String, Object> listAdminPosts(int page, int size, String keyword) {
-=======
     public Map<String, Object> listAdminPosts(int page, int size, String keyword, Long authorId)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         int safePage = Math.max(page, 1);
         int safeSize = Math.max(size, 1);
         int offset = (safePage - 1) * safeSize;
 
-<<<<<<< HEAD
-        List<ForumPostVO> posts = forumPostMapper.selectPage("latest", offset, safeSize, trimToNull(keyword), null, false);
-        Long total = forumPostMapper.countPage(trimToNull(keyword), null, false);
-=======
-        List<ForumPostVO> posts = forumPostMapper.selectPage("latest", offset, safeSize, trimToNull(keyword), authorId, null, false);
-        Long total = forumPostMapper.countPage(trimToNull(keyword), authorId, null, false);
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
+        List<ForumPostVO> posts = forumPostMapper.selectPage("latest", offset, safeSize, trimToNull(keyword), authorId, null, false, null);
+        attachTagNames(posts);
+        Long total = forumPostMapper.countPage(trimToNull(keyword), authorId, null, false, null);
 
         Map<String, Object> result = new HashMap<>();
         result.put("data", posts);
@@ -211,33 +164,45 @@ public class ForumPostServiceImpl implements ForumPostService
 
     @Override
     @Transactional
-<<<<<<< HEAD
-    public void updateAdminPostMeta(Long id, ForumPostAdminUpdateDTO updateDTO) {
-=======
     public void updateAdminPostMeta(Long id, ForumPostAdminUpdateDTO updateDTO)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
-        ForumPostVO existingPost = forumPostMapper.selectById(id);
+        ForumPostVO existingPost = forumPostMapper.selectById(id, null);
         if (existingPost == null) {
             throw new IllegalArgumentException("帖子不存在");
+        }
+        if (updateDTO == null) {
+            throw new IllegalArgumentException("更新内容不能为空");
         }
 
         ForumPost forumPost = new ForumPost();
         forumPost.setId(id);
-        forumPost.setIsPinned(updateDTO.getIsPinned());
-        forumPost.setIsFeatured(updateDTO.getIsFeatured());
+        forumPost.setIsPinned(Boolean.TRUE.equals(updateDTO.getIsPinned()));
+        forumPost.setIsFeatured(Boolean.TRUE.equals(updateDTO.getIsFeatured()));
+        forumPost.setCategoryId(validateAdminCategory(updateDTO.getCategoryId()));
+        forumPost.setTags(normalizeTagIds(updateDTO.getTags()));
         forumPostMapper.updateMeta(forumPost);
     }
 
     @Override
     @Transactional
-<<<<<<< HEAD
-    public void deletePost(Long id) {
-=======
+    public void updatePostStatus(Long id, Integer status)
+    {
+        ForumPostVO existingPost = forumPostMapper.selectById(id, null);
+        if (existingPost == null) {
+            throw new IllegalArgumentException("帖子不存在");
+        }
+        if (status == null || (status != 0 && status != 1)) {
+            throw new IllegalArgumentException("帖子状态无效");
+        }
+
+        forumPostMapper.updateStatus(id, status);
+    }
+
+    @Override
+    @Transactional
     public void deletePost(Long id)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
-        ForumPostVO existingPost = forumPostMapper.selectById(id);
+        ForumPostVO existingPost = forumPostMapper.selectById(id, null);
         if (existingPost == null) {
             throw new IllegalArgumentException("帖子不存在");
         }
@@ -245,12 +210,8 @@ public class ForumPostServiceImpl implements ForumPostService
     }
 
     @Override
-<<<<<<< HEAD
-    public void touchLastActivityByPage(String page) {
-=======
     public void touchLastActivityByPage(String page)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         Long postId = parseForumPostId(page);
         if (postId == null) {
             return;
@@ -259,260 +220,6 @@ public class ForumPostServiceImpl implements ForumPostService
     }
 
     @Override
-<<<<<<< HEAD
-    public Long countTotal() {
-        return forumPostMapper.countAll();
-    }
-
-    // ========== 新增方法：论坛专栏功能 ==========
-
-    @Override
-    public PageResult<PostVO> getPostList(PostQueryDTO query) {
-        if (query.getPage() == null || query.getPage() < 1) {
-            query.setPage(1);
-        }
-        if (query.getSize() == null || query.getSize() < 1) {
-            query.setSize(10);
-        }
-        if (query.getSortBy() == null || query.getSortBy().isEmpty()) {
-            query.setSortBy("time");
-        }
-        if (query.getOrder() == null || query.getOrder().isEmpty()) {
-            query.setOrder("desc");
-        }
-
-        int offset = (query.getPage() - 1) * query.getSize();
-
-        List<ForumPost> posts = forumPostMapper.selectPostListNew(query, offset);
-        Long total = forumPostMapper.selectPostCountNew(query.getKeyword());
-
-        List<PostVO> list = posts.stream()
-                .map(this::convertToPostVO)
-                .collect(Collectors.toList());
-
-        PageResult<PostVO> result = new PageResult<>();
-        result.setPage(query.getPage());
-        result.setSize(query.getSize());
-        result.setTotal(total);
-        result.setRecords(list);
-        return result;
-    }
-
-    @Override
-    public PostDetailVO getPostDetail(Long postId) {
-        CompletableFuture.runAsync(() -> {
-            try {
-                forumPostMapper.incrementViewCountNew(postId);
-            } catch (Exception e) {
-                log.error("增加浏览量失败: {}", e.getMessage());
-            }
-        });
-
-        ForumPost post = forumPostMapper.selectByIdEntity(postId);
-        if (post == null) {
-            throw new BusinessException("文章不存在");
-        }
-
-        post.setLastActivityTime(LocalDateTime.now());
-        forumPostMapper.updateByIdEntity(post);
-
-        return convertToPostDetailVO(post);
-    }
-
-    @Override
-    @Transactional
-    public Long createNewPost(PostCreateDTO dto, Long userId, String nickname, String email, String avatar) {
-        String summary = dto.getSummary();
-        if (!StringUtils.hasText(summary) && dto.getAutoSummary()) {
-            summary = generateSummary(dto.getContent(), 200);
-        }
-
-        ForumPost post = new ForumPost();
-        post.setAuthorId(userId);
-        post.setTitle(dto.getTitle());
-        post.setSummary(summary);
-        post.setContent(dto.getContent());
-        post.setNickname(nickname);
-        post.setEmail(email);
-        post.setAvatar(avatar);
-        post.setViewCount(0);
-        post.setCommentCount(0);
-        post.setLikeCount(0);
-        post.setIsPinned(false);
-        post.setIsFeatured(false);
-        post.setStatus(1);
-
-        LocalDateTime now = LocalDateTime.now();
-        post.setCreateTime(now);
-        post.setUpdateTime(now);
-        post.setLastActivityTime(now);
-
-        int result = forumPostMapper.insertNew(post);
-        if (result <= 0) {
-            throw new BusinessException("发布失败");
-        }
-
-        log.info("文章发布成功: postId={}", post.getId());
-        return post.getId();
-    }
-
-    @Override
-    @Transactional
-    public void updatePost(Long postId, PostCreateDTO dto, Long userId) {
-        ForumPost post = forumPostMapper.selectByIdEntity(postId);
-        if (post == null) {
-            throw new BusinessException("文章不存在");
-        }
-
-        if (!post.getAuthorId().equals(userId)) {
-            throw new BusinessException("无权限修改此文章");
-        }
-
-        post.setTitle(dto.getTitle());
-        post.setContent(dto.getContent());
-
-        if (StringUtils.hasText(dto.getSummary())) {
-            post.setSummary(dto.getSummary());
-        } else if (dto.getAutoSummary()) {
-            post.setSummary(generateSummary(dto.getContent(), 200));
-        }
-
-        post.setUpdateTime(LocalDateTime.now());
-        post.setLastActivityTime(LocalDateTime.now());
-
-        int result = forumPostMapper.updateByIdEntity(post);
-        if (result <= 0) {
-            throw new BusinessException("修改失败");
-        }
-
-        log.info("文章更新成功: postId={}", postId);
-    }
-
-    @Override
-    @Transactional
-    public void deletePostById(Long postId, Long userId, boolean isAdmin) {
-        ForumPost post = forumPostMapper.selectByIdEntity(postId);
-        if (post == null) {
-            throw new BusinessException("文章不存在");
-        }
-
-        if (!isAdmin && !post.getAuthorId().equals(userId)) {
-            throw new BusinessException("无权限删除此文章");
-        }
-
-        int result = forumPostMapper.deleteByIdEntity(postId);
-        if (result <= 0) {
-            throw new BusinessException("删除失败");
-        }
-
-        log.info("文章删除成功: postId={}", postId);
-    }
-
-    @Override
-    public PageResult<PostVO> getUserPostsByUserId(Long userId, Integer page, Integer size) {
-        if (page == null || page < 1) {
-            page = 1;
-        }
-        if (size == null || size < 1) {
-            size = 10;
-        }
-
-        int offset = (page - 1) * size;
-        List<ForumPost> posts = forumPostMapper.selectByAuthorIdWithPageNew(userId, offset, size);
-        Long total = forumPostMapper.countByAuthorIdNew(userId);
-
-        List<PostVO> list = posts.stream()
-                .map(this::convertToPostVO)
-                .collect(Collectors.toList());
-
-        PageResult<PostVO> result = new PageResult<>();
-        result.setPage(page);
-        result.setSize(size);
-        result.setTotal(total);
-        result.setRecords(list);
-        return result;
-    }
-
-    @Override
-    public List<PostVO> getPromotedPostList() {
-        List<ForumPost> posts = forumPostMapper.selectPromotedPostsNew(5);
-        return posts.stream()
-                .map(this::convertToPostVO)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public void incrementCommentCount(Long postId) {
-        forumPostMapper.incrementCommentCount(postId);
-    }
-
-    @Override
-    public void likePost(Long postId, Long userId) {
-        // 仅做计数，不做去重控制
-        ForumPost post = forumPostMapper.selectByIdEntity(postId);
-        if (post == null || post.getStatus() == null || post.getStatus() != 1) {
-            throw new BusinessException("文章不存在或已下线");
-        }
-        forumPostMapper.incrementLikeCount(postId);
-    }
-
-    @Override
-    public void unlikePost(Long postId, Long userId) {
-        ForumPost post = forumPostMapper.selectByIdEntity(postId);
-        if (post == null || post.getStatus() == null || post.getStatus() != 1) {
-            throw new BusinessException("文章不存在或已下线");
-        }
-        forumPostMapper.decrementLikeCount(postId);
-    }
-
-    // ========== 私有辅助方法 ==========
-
-    private PostVO convertToPostVO(ForumPost post) {
-        if (post == null) {
-            return null;
-        }
-        PostVO vo = new PostVO();
-        BeanUtils.copyProperties(post, vo);
-        vo.setCommentCount(post.getCommentCount() != null ? post.getCommentCount() : 0);
-        return vo;
-    }
-
-    private PostDetailVO convertToPostDetailVO(ForumPost post) {
-        if (post == null) {
-            return null;
-        }
-        PostDetailVO vo = new PostDetailVO();
-        BeanUtils.copyProperties(post, vo);
-        return vo;
-    }
-
-    private String generateSummary(String content, int maxLength) {
-        if (content == null || content.isEmpty()) {
-            return "";
-        }
-
-        String plainText = content
-                .replaceAll("#+\\s", "")
-                .replaceAll("\\*\\*|\\*", "")
-                .replaceAll("\\[.*?\\]\\(.*?\\)", "")
-                .replaceAll("!\\[.*?\\]\\(.*?\\)", "")
-                .replaceAll("```[\\s\\S]*?```", "")
-                .replaceAll("`[^`]*`", "")
-                .replaceAll(">\\s", "")
-                .replaceAll("\\n+", " ")
-                .trim();
-
-        if (plainText.length() > maxLength) {
-            return plainText.substring(0, maxLength) + "...";
-        }
-        return plainText;
-    }
-
-    private String normalizeSort(String sort) {
-        if (!StringUtils.hasText(sort)) {
-            return "latest";
-        }
-=======
     public Long countTotal()
     {
         return forumPostMapper.countAll();
@@ -524,7 +231,6 @@ public class ForumPostServiceImpl implements ForumPostService
             return "latest";
         }
 
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         String normalizedSort = sort.trim().toLowerCase();
         if ("hot".equals(normalizedSort) || "featured".equals(normalizedSort)) {
             return normalizedSort;
@@ -532,12 +238,8 @@ public class ForumPostServiceImpl implements ForumPostService
         return "latest";
     }
 
-<<<<<<< HEAD
-    private void validateForumPost(ForumPostDTO forumPostDTO) {
-=======
     private void validateForumPost(ForumPostDTO forumPostDTO)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         if (forumPostDTO == null) {
             throw new IllegalArgumentException("帖子内容不能为空");
         }
@@ -549,6 +251,12 @@ public class ForumPostServiceImpl implements ForumPostService
         }
         if (!StringUtils.hasText(forumPostDTO.getContent())) {
             throw new IllegalArgumentException("正文不能为空");
+        }
+        if (forumPostDTO.getCategoryId() == null) {
+            throw new IllegalArgumentException("请选择分类");
+        }
+        if (categoryMapper.countById(forumPostDTO.getCategoryId()) <= 0) {
+            throw new IllegalArgumentException("所选分类不存在");
         }
 
         if (forumPostDTO.getNickname().trim().length() > 50) {
@@ -563,14 +271,12 @@ public class ForumPostServiceImpl implements ForumPostService
         if (forumPostDTO.getContent().trim().length() > 20000) {
             throw new IllegalArgumentException("正文不能超过20000字符");
         }
+
+        normalizeTagIds(forumPostDTO.getTags());
     }
 
-<<<<<<< HEAD
-    private String buildSummary(ForumPostDTO forumPostDTO) {
-=======
     private String buildSummary(ForumPostDTO forumPostDTO)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         if (StringUtils.hasText(forumPostDTO.getSummary())) {
             return forumPostDTO.getSummary().trim();
         }
@@ -595,24 +301,111 @@ public class ForumPostServiceImpl implements ForumPostService
         return plainText.substring(0, SUMMARY_MAX_LENGTH) + "...";
     }
 
-<<<<<<< HEAD
-    private String trimToNull(String value) {
-=======
     private String trimToNull(String value)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         if (!StringUtils.hasText(value)) {
             return null;
         }
         return value.trim();
     }
 
-<<<<<<< HEAD
-    private Map<String, Object> buildPagination(int page, int size, Long total) {
-=======
+    private Long validateAdminCategory(Long categoryId)
+    {
+        if (categoryId == null) {
+            return null;
+        }
+        if (categoryMapper.countById(categoryId) <= 0) {
+            throw new IllegalArgumentException("所选分类不存在");
+        }
+        return categoryId;
+    }
+
+    private String normalizeTagIds(String rawTags)
+    {
+        if (!StringUtils.hasText(rawTags)) {
+            return null;
+        }
+
+        Set<Long> tagIds = Arrays.stream(rawTags.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(this::parseTagId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (tagIds.isEmpty()) {
+            return null;
+        }
+
+        List<Long> normalizedTagIds = new ArrayList<>(tagIds);
+        List<Tags> existingTags = tagsMapper.selectByIds(normalizedTagIds);
+        if (existingTags.size() != normalizedTagIds.size()) {
+            throw new IllegalArgumentException("所选标签不存在");
+        }
+
+        return normalizedTagIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    private Long parseTagId(String value)
+    {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("标签参数无效");
+        }
+    }
+
+    private void attachTagNames(ForumPostVO post)
+    {
+        if (post == null) {
+            return;
+        }
+        List<ForumPostVO> singlePost = new ArrayList<>();
+        singlePost.add(post);
+        attachTagNames(singlePost);
+    }
+
+    private void attachTagNames(List<ForumPostVO> posts)
+    {
+        if (posts == null || posts.isEmpty()) {
+            return;
+        }
+
+        Set<Long> tagIds = posts.stream()
+                .map(ForumPostVO::getTagIds)
+                .filter(StringUtils::hasText)
+                .flatMap(tags -> Arrays.stream(tags.split(",")))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .map(this::parseTagId)
+                .collect(Collectors.toSet());
+
+        if (tagIds.isEmpty()) {
+            posts.forEach(post -> post.setTags(null));
+            return;
+        }
+
+        Map<Long, String> tagNameMap = tagsMapper.selectByIds(new ArrayList<>(tagIds)).stream()
+                .collect(Collectors.toMap(Tags::getId, Tags::getName));
+
+        posts.forEach(post -> {
+            if (!StringUtils.hasText(post.getTagIds())) {
+                post.setTags(null);
+                return;
+            }
+
+            String resolvedTags = Arrays.stream(post.getTagIds().split(","))
+                    .map(String::trim)
+                    .filter(StringUtils::hasText)
+                    .map(this::parseTagId)
+                    .map(tagNameMap::get)
+                    .filter(StringUtils::hasText)
+                    .collect(Collectors.joining(","));
+            post.setTags(StringUtils.hasText(resolvedTags) ? resolvedTags : null);
+        });
+    }
+
     private Map<String, Object> buildPagination(int page, int size, Long total)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         long safeTotal = total == null ? 0L : total;
         Map<String, Object> pagination = new HashMap<>();
         pagination.put("currentPage", page);
@@ -622,12 +415,8 @@ public class ForumPostServiceImpl implements ForumPostService
         return pagination;
     }
 
-<<<<<<< HEAD
-    private Map<String, Object> buildPublicStats(Long total) {
-=======
     private Map<String, Object> buildPublicStats(Long total)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         Map<String, Object> stats = new HashMap<>();
         stats.put("total", total == null ? 0L : total);
         stats.put("featuredCount", forumPostMapper.countFeatured());
@@ -635,12 +424,8 @@ public class ForumPostServiceImpl implements ForumPostService
         return stats;
     }
 
-<<<<<<< HEAD
-    private Long parseForumPostId(String page) {
-=======
     private Long parseForumPostId(String page)
     {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
         if (!StringUtils.hasText(page) || !page.startsWith("forum-post-")) {
             return null;
         }

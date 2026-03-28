@@ -12,7 +12,7 @@
   </div>
 </template>
 <script setup>
-import MyBotUi from '@/components/bot/MyBotUi.vue'
+import MyBotUi from '@/components/MyBotUI/MyBotUi.vue'
 </script>
 
 <style scoped>

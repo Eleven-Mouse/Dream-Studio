@@ -6,6 +6,7 @@
 
 <style scoped>
 .content-shell {
+  margin-top: 18px;
   padding: 18px;
   border-radius: 26px;
   border: 1px solid rgba(15, 23, 42, 0.08);

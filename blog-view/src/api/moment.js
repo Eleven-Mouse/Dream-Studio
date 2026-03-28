@@ -29,6 +29,15 @@ export function createManagedMoment(data) {
   })
 }
 
+export function updateManagedMoment(id, data) {
+  return request({
+    baseURL: '',
+    url: `/admin/moment/${id}`,
+    method: 'put',
+    data,
+  })
+}
+
 export function deleteManagedMoment(id) {
   return request({
     baseURL: '',

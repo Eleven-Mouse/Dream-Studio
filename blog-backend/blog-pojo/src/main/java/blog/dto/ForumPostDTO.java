@@ -25,6 +25,10 @@ public class ForumPostDTO implements Serializable
 
     private String content;
 
+    private Long categoryId;
+
+    private String tags;
+
     private String nickname;
 
     private String email;

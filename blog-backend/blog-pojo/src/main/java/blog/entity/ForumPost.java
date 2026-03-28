@@ -1,17 +1,5 @@
 package blog.entity;
 
-<<<<<<< HEAD
-
-import lombok.Data;
-import java.time.LocalDateTime;
-
-/**
- * 论坛帖子实体类
- */
-@Data
-public class ForumPost {
-
-=======
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -27,7 +15,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ForumPost
 {
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     private Long id;
 
     private Long authorId;
@@ -38,6 +25,10 @@ public class ForumPost
 
     private String content;
 
+    private Long categoryId;
+
+    private String tags;
+
     private String nickname;
 
     private String email;
@@ -46,22 +37,12 @@ public class ForumPost
 
     private Integer viewCount;
 
-<<<<<<< HEAD
-    private Integer commentCount;
+    private Integer status;
 
-    private Integer likeCount;
-
-=======
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     private Boolean isPinned;
 
     private Boolean isFeatured;
 
-<<<<<<< HEAD
-    private Integer status;
-
-=======
->>>>>>> df87942a53c2717282b884e9e8b7a7f8444e1cc8
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;

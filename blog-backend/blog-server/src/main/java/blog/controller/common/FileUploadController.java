@@ -60,7 +60,7 @@ public class FileUploadController
 
         try {
             String imageUrl = resourceStorageService.uploadImage(file);
-            return Result.success(imageUrl);
+            return Result.success("上传成功", imageUrl);
         } catch (IllegalArgumentException | IllegalStateException e) {
             log.error("Upload image failed: {}", e.getMessage(), e);
             return Result.error(e.getMessage());
