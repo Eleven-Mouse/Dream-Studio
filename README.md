@@ -1,4 +1,6 @@
-# Dream Studio
+<h1 align="center">𝒟𝓇𝑒𝒶𝓂 𝒮𝓉𝓊𝒹𝒾𝑜</h1>
+
+<p align="center"><strong>Dream Studio</strong></p>
 
 ![Vue 3](https://img.shields.io/badge/Vue-3-42b883?logo=vue.js&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3-6db33f?logo=springboot&logoColor=white)
