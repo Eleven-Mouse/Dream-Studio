@@ -27,7 +27,7 @@ import SiteAnnouncementStrip from '@/components/common/SiteAnnouncementStrip.vue
 
 const route = useRoute()
 
-const ANNOUNCEMENT_ROUTE_SET = new Set(['/home', '/forum', '/resources'])
+const ANNOUNCEMENT_ROUTE_SET = new Set(['/home', '/headlines', '/forum', '/resources'])
 
 const showAnnouncementStrip = computed(() => ANNOUNCEMENT_ROUTE_SET.has(route.path))
 </script>

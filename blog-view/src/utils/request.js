@@ -72,12 +72,12 @@ service.interceptors.response.use(
       return res
     }
 
-    // 如果是 Result DTO 格式，我们根据 code 的值来判断
-    if (res.code === 1) {
-      return res.data // code 为 1 表示成功，直接返回 data 部分
+    // 兼容 code=1 / code=200 的成功响应
+    if (res.code === 1 || res.code === 200) {
+      return res.data !== undefined ? res.data : res
     } else {
       // 处理已知的错误情况 (code 不为 1)
-      const message = resolveMessage(res)
+      const message = res.msg || res.message || resolveMessage(res)
       ElMessage({
         message,
         type: 'error',
