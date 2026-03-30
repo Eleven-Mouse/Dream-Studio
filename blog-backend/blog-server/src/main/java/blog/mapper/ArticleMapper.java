@@ -3,6 +3,7 @@ package blog.mapper;
 import blog.dto.ArticleDTO;
 import blog.entity.Article;
 import blog.vo.ArticleVO;
+import blog.vo.HeadlineItemVO;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
@@ -106,4 +107,6 @@ public interface ArticleMapper {
 
     @Update("UPDATE article SET view_count = #{count} WHERE id = #{articleId}")
     void updateViewCount(Long articleId, Integer count);
+
+    List<HeadlineItemVO> selectHeadlineItems();
 }

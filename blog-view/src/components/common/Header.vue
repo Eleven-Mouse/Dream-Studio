@@ -28,9 +28,12 @@
         :ellipsis="false"
         :router="true"
       >
-        <el-menu-item index="/home"
-          ><el-icon><HomeFilled /></el-icon>Home</el-menu-item
-        >
+        <el-menu-item index="/home">
+          <el-icon><HomeFilled /></el-icon>Home
+        </el-menu-item>
+        <el-menu-item index="/headlines">
+          <el-icon><Reading /></el-icon>Headlines
+        </el-menu-item>
         <el-sub-menu index="categories-menu">
           <template #title
             ><el-icon><Grid /></el-icon>categories</template
@@ -108,6 +111,7 @@ import {
   Promotion,
   Comment,
   ChatDotRound,
+  Reading,
 } from '@element-plus/icons-vue'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
@@ -150,6 +154,8 @@ watch(
   (newPath) => {
     if (newPath === '/home' || newPath === '/') {
       activeIndex.value = '/home'
+    } else if (newPath.startsWith('/headlines')) {
+      activeIndex.value = '/headlines'
     } else if (newPath.startsWith('/forum')) {
       activeIndex.value = '/forum'
     } else if (newPath.startsWith('/category/')) {

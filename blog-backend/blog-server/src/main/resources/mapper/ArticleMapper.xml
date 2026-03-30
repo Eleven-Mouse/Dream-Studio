@@ -109,6 +109,40 @@
             COALESCE(a.publish_time, a.create_time) DESC
     </select>
 
+    <select id="selectHeadlineItems" resultType="blog.vo.HeadlineItemVO">
+        SELECT
+            a.id,
+            a.author_id          AS authorId,
+            ua.username          AS authorUsername,
+            ua.nickname          AS authorNickname,
+            ua.avatar            AS authorAvatar,
+            a.title,
+            a.summary,
+            a.cover_image        AS coverImage,
+            a.view_count         AS viewCount,
+            a.publish_time       AS publishTime,
+            a.create_time        AS createTime,
+            COALESCE(c.comment_count, 0) AS commentCount,
+            COALESCE(l.like_count, 0)    AS likeCount
+        FROM
+            article a
+                LEFT JOIN user_account ua ON a.author_id = ua.id
+                LEFT JOIN (
+                SELECT blog_id AS article_id, COUNT(*) AS comment_count
+                FROM comment
+                WHERE status = 1 AND blog_id IS NOT NULL
+                GROUP BY blog_id
+            ) c ON c.article_id = a.id
+                LEFT JOIN (
+                SELECT article_id, COUNT(*) AS like_count
+                FROM article_like
+                GROUP BY article_id
+            ) l ON l.article_id = a.id
+        WHERE
+            a.status = 1
+        ORDER BY COALESCE(a.publish_time, a.create_time) DESC
+    </select>
+
     <select id="getContributionData" resultType="java.util.Map">
         SELECT
             DATE_FORMAT(publish_time, '%Y-%m-%d') as date,
