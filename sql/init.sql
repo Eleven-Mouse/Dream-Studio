@@ -55,6 +55,9 @@ INSERT INTO `article` VALUES (64,'el-autocomplete的基本使用',' el-autocompl
 /*!40000 ALTER TABLE `article` ENABLE KEYS */;
 UNLOCK TABLES;
 
+ALTER TABLE `article`
+  ADD COLUMN `author_id` bigint DEFAULT NULL COMMENT '作者用户ID' AFTER `id`;
+
 --
 -- Table structure for table `article_like`
 --
