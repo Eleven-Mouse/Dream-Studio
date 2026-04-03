@@ -37,7 +37,7 @@
         <fastjson.version>1.2.76</fastjson.version>
         <jsqlparser.version>4.5</jsqlparser.version>
         <aws.sdk.version>2.32.18</aws.sdk.version>
-        <springdoc.verson>2.5.0</springdoc.verson>
+        <springdoc.verson>2.8.16</springdoc.verson>
     </properties>
 
     <dependencyManagement>

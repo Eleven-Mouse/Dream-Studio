@@ -28,7 +28,7 @@ public class HeadlineServiceImpl implements HeadlineService {
 
     @Override
     public PageInfo<HeadlineItemVO> pageHeadlines(int page, int size, Long currentUserId) {
-        PageHelper.startPage(page, size, "COALESCE(publish_time, create_time) DESC");
+        PageHelper.startPage(page, size);
         List<HeadlineItemVO> items = articleMapper.selectHeadlineItems();
         if (items == null) {
             items = Collections.emptyList();
