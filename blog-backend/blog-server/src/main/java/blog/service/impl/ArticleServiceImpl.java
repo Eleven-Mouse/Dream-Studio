@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -159,6 +160,17 @@ public class ArticleServiceImpl implements ArticleService {
             articles = articles.stream()
                     .filter(article -> Boolean.TRUE.equals(article.getIsFeatured()))
                     .toList();
+        }
+
+        articles = new java.util.ArrayList<>(articles);
+        if ("stars".equalsIgnoreCase(queryDTO.getSortBy())) {
+            articles.sort(Comparator
+                    .comparing((ArticleVO article) -> article.getStars() == null ? 0 : article.getStars(), Comparator.reverseOrder())
+                    .thenComparing(article -> article.getPublishTime() != null ? article.getPublishTime() : article.getCreateTime(), Comparator.nullsLast(Comparator.reverseOrder())));
+        } else {
+            articles.sort(Comparator.comparing(
+                    (ArticleVO article) -> article.getPublishTime() != null ? article.getPublishTime() : article.getCreateTime(),
+                    Comparator.nullsLast(Comparator.reverseOrder())));
         }
 
         // 提取所有文章中的所有标签ID

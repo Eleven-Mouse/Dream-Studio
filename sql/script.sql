@@ -1,20 +1,39 @@
+create table announcement
+(
+    id           bigint auto_increment comment '公告ID'
+        primary key,
+    author_id    bigint                             not null comment '发布人用户ID',
+    title        varchar(200)                       not null comment '公告标题',
+    content      text                               not null comment '公告内容',
+    status       tinyint  default 1                 not null comment '状态：0-草稿，1-已发布',
+    publish_time datetime                           null comment '发布时间',
+    create_time  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间'
+)
+    comment '站点公告表';
+
+create index idx_announcement_status
+    on announcement (status, publish_time);
+
 create table article
 (
     id           bigint auto_increment comment '文章ID'
         primary key,
-    author_id    bigint                             null comment '作者用户ID',
-    title        varchar(200)                       not null comment '文章标题',
-    summary      varchar(500)                       null comment '文章摘要',
-    content      longtext                           null comment '文章内容（Markdown格式）',
-    category_id  bigint                             null comment '分类ID',
-    view_count   int      default 0                 null comment '浏览次数',
-    is_comment   tinyint  default 1                 null comment '是否允许评论：0-否，1-是',
-    status       tinyint  default 1                 null comment '状态：0-草稿，1-已发布，2-已删除',
-    publish_time datetime                           null comment '发布时间',
-    create_time  datetime default CURRENT_TIMESTAMP null comment '创建时间',
-    update_time  datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
-    cover_image  varchar(1000)                      null,
-    tags         varchar(256)                       null
+    author_id    bigint                               null comment '作者用户ID',
+    title        varchar(200)                         not null comment '文章标题',
+    summary      varchar(500)                         null comment '文章摘要',
+    content      longtext                             null comment '文章内容（Markdown格式）',
+    category_id  bigint                               null comment '分类ID',
+    view_count   int        default 0                 null comment '浏览次数',
+    is_comment   tinyint    default 1                 null comment '是否允许评论：0-否，1-是',
+    is_featured  tinyint(1) default 0                 not null comment '是否推荐到首页轮播',
+    status       tinyint    default 1                 null comment '状态：0-草稿，1-已发布，2-已删除',
+    publish_time datetime                             null comment '发布时间',
+    create_time  datetime   default CURRENT_TIMESTAMP null comment '创建时间',
+    update_time  datetime   default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
+    cover_image  varchar(1000)                        null,
+    tags         varchar(256)                         null,
+    stars        int                                  not null comment '点赞数'
 )
     comment '文章表';
 
@@ -76,10 +95,13 @@ create table forum_post
     title              varchar(200)                         not null comment '帖子标题',
     summary            varchar(500)                         null comment '帖子摘要',
     content            longtext                             not null comment '帖子正文（Markdown）',
+    category_id        bigint                               null comment '分类ID',
+    tags               varchar(256)                         null comment '标签ID列表，逗号分隔',
     nickname           varchar(100)                         not null comment '发帖昵称',
     email              varchar(200)                         null comment '邮箱',
     avatar             varchar(500)                         null comment '头像地址',
     view_count         int        default 0                 not null comment '浏览次数',
+    status             tinyint    default 1                 not null comment '状态：0-隐藏，1-公开',
     is_pinned          tinyint(1) default 0                 not null comment '是否置顶',
     is_featured        tinyint(1) default 0                 not null comment '是否加精',
     create_time        datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
@@ -90,6 +112,9 @@ create table forum_post
 
 create index idx_forum_post_activity
     on forum_post (last_activity_time);
+
+create index idx_forum_post_category_id
+    on forum_post (category_id);
 
 create index idx_forum_post_create_time
     on forum_post (create_time);
@@ -108,6 +133,7 @@ create table forum_report
     reason        varchar(50)                           not null comment '举报原因',
     detail        varchar(500)                          null comment '补充说明',
     status        varchar(30) default 'PENDING'         not null comment '处理状态',
+    target_action varchar(30) default 'NONE'            not null comment '处理动作',
     reviewer_id   bigint                                null comment '处理人用户ID',
     reviewer_note varchar(500)                          null comment '处理备注',
     create_time   datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
@@ -128,6 +154,7 @@ create table moment
 (
     id           bigint auto_increment comment '动态ID'
         primary key,
+    author_id    bigint                             null comment '作者用户ID',
     content      text                               not null comment '动态内容',
     image        varchar(1000)                      null comment '动态图片（多个图片用逗号分隔）',
     is_public    tinyint  default 1                 null comment '是否公开：0-私密，1-公开',
@@ -178,6 +205,36 @@ create index idx_create_time
 
 create index idx_user_id
     on operation_log (user_id);
+
+create table site_resource
+(
+    id             bigint auto_increment comment '资源ID'
+        primary key,
+    uploader_id    bigint                                not null comment '上传者用户ID',
+    original_name  varchar(255)                          not null comment '原始文件名',
+    file_url       varchar(1000)                         not null comment '资源访问地址',
+    file_size      bigint      default 0                 not null comment '文件大小',
+    extension      varchar(20)                           not null comment '文件扩展名',
+    category_key   varchar(30) default 'generic'         not null comment '资源分类键',
+    mime_type      varchar(120)                          null comment 'MIME 类型',
+    status         varchar(30) default 'PENDING'         not null comment '审核状态',
+    review_note    varchar(500)                          null comment '审核备注',
+    reviewer_id    bigint                                null comment '审核人用户ID',
+    download_count int         default 0                 not null comment '下载次数',
+    create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
+    update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    review_time    datetime                              null comment '审核时间'
+)
+    comment '站点资源表';
+
+create index idx_site_resource_category
+    on site_resource (category_key);
+
+create index idx_site_resource_status
+    on site_resource (status, review_time);
+
+create index idx_site_resource_uploader
+    on site_resource (uploader_id, create_time);
 
 create table system_config
 (

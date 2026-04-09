@@ -40,10 +40,11 @@ public class ArticleController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Boolean featuredOnly,
+            @RequestParam(defaultValue = "time") String sortBy,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size)
     {
-        log.info("获取文章列表，分类ID：{}，分类名称：{}，关键词：{}，仅精华：{}，页码：{}，每页数量：{}", categoryId, category, keyword, featuredOnly, page, size);
+        log.info("获取文章列表，分类ID：{}，分类名称：{}，关键词：{}，仅精华：{}，排序方式：{}，页码：{}，每页数量：{}", categoryId, category, keyword, featuredOnly, sortBy, page, size);
 
         try {
             ArticleQueryDTO queryDTO = new ArticleQueryDTO();
@@ -52,6 +53,7 @@ public class ArticleController {
                 queryDTO.setKeyword(keyword);
             }
             queryDTO.setFeaturedOnly(featuredOnly);
+            queryDTO.setSortBy(sortBy);
             // 只获取已发布的文章
             queryDTO.setStatus(1);
 

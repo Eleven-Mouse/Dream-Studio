@@ -29,7 +29,7 @@ public interface ArticleMapper {
      * 根据ID查询文章
      */
     @Select("SELECT a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage, " +
-            "a.category_id as categoryId, a.tags, a.view_count as viewCount, " +
+            "a.category_id as categoryId, a.tags, a.view_count as viewCount, a.stars as stars, " +
             "a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime, " +
             "a.create_time as createTime, a.update_time as updateTime, c.name as categoryName, " +
             "ua.nickname as authorNickname, ua.avatar as authorAvatar " +
@@ -45,7 +45,7 @@ public interface ArticleMapper {
      * 根据状态查询文章
      */
     @Select("SELECT a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage, " +
-            "a.category_id as categoryId, a.tags, a.view_count as viewCount, " +
+            "a.category_id as categoryId, a.tags, a.view_count as viewCount, a.stars as stars, " +
             "a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime, " +
             "a.create_time as createTime, a.update_time as updateTime, c.name as categoryName, " +
             "ua.nickname as authorNickname, ua.avatar as authorAvatar " +
@@ -60,7 +60,7 @@ public interface ArticleMapper {
      * 根据标题模糊查询
      */
     @Select("SELECT a.id, a.author_id as authorId, a.title, a.summary, a.content, a.cover_image as coverImage, " +
-            "a.category_id as categoryId, a.tags, a.view_count as viewCount, " +
+            "a.category_id as categoryId, a.tags, a.view_count as viewCount, a.stars as stars, " +
             "a.is_comment as isComment, a.is_featured as isFeatured, a.status, a.publish_time as publishTime, " +
             "a.create_time as createTime, a.update_time as updateTime, c.name as categoryName, " +
             "ua.nickname as authorNickname, ua.avatar as authorAvatar " +
