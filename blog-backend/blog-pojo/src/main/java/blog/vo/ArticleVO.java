@@ -61,6 +61,10 @@ public class ArticleVO implements Serializable {
      */
     private Integer viewCount;
 
+    /**
+     * 热度评分
+     */
+    private Integer stars;
 
     /**
      * 标签（逗号分隔的字符串）

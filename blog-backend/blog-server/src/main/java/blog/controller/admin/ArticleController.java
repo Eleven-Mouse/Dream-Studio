@@ -96,6 +96,7 @@ public class ArticleController
     public Result<Map<String, Object>> getArticlesList(@RequestParam(required = false) Long categoryId,
                                                        @RequestParam(required = false) String category,
                                                        @RequestParam(required = false) String keyword,
+                                                       @RequestParam(defaultValue = "time") String sortBy,
                                                        @RequestParam(defaultValue = "1") int page,
                                                        @RequestParam(defaultValue = "10") int size,
                                                        Authentication authentication)
@@ -104,7 +105,7 @@ public class ArticleController
             return Result.error(401, "请先登录");
         }
 
-        log.info("获取文章列表，分类ID：{}，分类名称：{}，关键词：{}，页码：{}，每页数量：{}", categoryId, category, keyword, page, size);
+        log.info("获取文章列表，分类ID：{}，分类名称：{}，关键词：{}，排序方式：{}，页码：{}，每页数量：{}", categoryId, category, keyword, sortBy, page, size);
 
         try {
             UserAccount currentUser = accessControlService.requireUser(authentication.getName());
@@ -112,6 +113,7 @@ public class ArticleController
             if (keyword != null && !keyword.trim().isEmpty()) {
                 queryDTO.setKeyword(keyword);
             }
+            queryDTO.setSortBy(sortBy);
             if (!accessControlService.isAdmin(currentUser)) {
                 queryDTO.setAuthorId(currentUser.getId());
             }
