@@ -55,6 +55,28 @@ INSERT INTO `article` VALUES (64,'el-autocomplete的基本使用',' el-autocompl
 /*!40000 ALTER TABLE `article` ENABLE KEYS */;
 UNLOCK TABLES;
 
+ALTER TABLE `article`
+  ADD COLUMN `author_id` bigint DEFAULT NULL COMMENT '作者用户ID' AFTER `id`;
+
+--
+-- Table structure for table `article_like`
+--
+DROP TABLE IF EXISTS `article_like`;
+CREATE TABLE `article_like` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `article_id` bigint NOT NULL COMMENT '文章ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_article_user` (`article_id`,`user_id`),
+  KEY `idx_article` (`article_id`),
+  KEY `idx_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章点赞';
+LOCK TABLES `article_like` WRITE;
+/*!40000 ALTER TABLE `article_like` DISABLE KEYS */;
+/*!40000 ALTER TABLE `article_like` ENABLE KEYS */;
+UNLOCK TABLES;
+
 --
 -- Table structure for table `category`
 --

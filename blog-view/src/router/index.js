@@ -275,6 +275,11 @@ const router = createRouter({
           component: () => import('@/views/public/Home.vue'),
         },
         {
+          path: 'headlines',
+          name: 'headlines',
+          component: () => import('@/views/public/Headlines.vue'),
+        },
+        {
           path: 'tag/:id',
           name: 'tag',
           component: () => import('@/views/public/Tags.vue'),

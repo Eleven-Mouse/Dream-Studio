@@ -58,6 +58,51 @@ body,
 
 body {
   margin: 0;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img,
+video,
+canvas,
+iframe,
+svg {
+  max-width: 100%;
+}
+
+@media (max-width: 720px) {
+  :root {
+    --el-dialog-width: min(94vw, 560px);
+  }
+
+  body {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  .el-button,
+  .el-input__wrapper,
+  .el-select__wrapper,
+  .el-textarea__inner,
+  .el-date-editor.el-input,
+  .el-pagination button {
+    min-height: var(--mobile-touch-min);
+  }
+
+  .el-dialog {
+    width: min(94vw, 560px) !important;
+    margin-top: max(5vh, 24px) !important;
+    max-height: calc(100vh - max(5vh, 24px) - max(5vh, 24px));
+  }
+
+  .el-dialog__body {
+    max-height: calc(100vh - 210px);
+    overflow-y: auto;
+  }
 }
 
 html[data-theme='dark']::before {

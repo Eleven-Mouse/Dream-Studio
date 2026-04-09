@@ -10,8 +10,15 @@ import CategoriesDirectoryCard from '@/components/CategoriesDirectoryCard.vue'
 
 <style scoped>
 .category-detail {
-  width: 700px;
+  width: min(700px, 100%);
   margin: 40px auto;
   padding: 0 20px;
+}
+
+@media (max-width: 720px) {
+  .category-detail {
+    margin: 24px auto;
+    padding: 0;
+  }
 }
 </style>

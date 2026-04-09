@@ -1132,14 +1132,14 @@ onMounted(() => {
 
 <style scoped>
 .resources-page {
-  width: 700px;
+  width: 100%;
+  max-width: 100%;
   padding: 28px 0 56px;
   box-sizing: border-box;
-  display: contents;
 }
 
 .resources-shell {
-  width: min(1420px, calc(70vw - 40px));
+  width: min(1420px, calc(100vw - 2 * var(--mobile-gutter)));
   margin: 0 auto;
   display: grid;
   gap: 22px;
@@ -1828,7 +1828,8 @@ onMounted(() => {
 
 @media (max-width: 720px) {
   .resources-shell {
-    width: calc(100vw - 20px);
+    width: calc(100vw - 2 * var(--mobile-gutter));
+    gap: 16px;
   }
 
   .hero-panel,
@@ -1869,6 +1870,138 @@ onMounted(() => {
   .card-action.approve,
   .card-action.reject {
     flex: 1 1 96px;
+  }
+}
+
+@media (max-width: 430px) {
+  .resources-page {
+    padding: 16px 0 max(28px, var(--safe-area-bottom));
+  }
+
+  .resources-shell {
+    width: calc(
+      100vw - max(10px, var(--safe-area-left)) - max(10px, var(--safe-area-right))
+    );
+    gap: 12px;
+  }
+
+  .hero-panel,
+  .resource-board {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+
+  .hero-copy h1,
+  .board-header h2 {
+    font-size: clamp(22px, 6vw, 26px);
+  }
+
+  .hero-tools {
+    margin-top: 14px;
+    gap: 10px;
+  }
+
+  .hero-search-shell,
+  .upload-button {
+    min-height: var(--mobile-touch-min);
+    border-radius: 14px;
+  }
+
+  .upload-button {
+    min-width: 0;
+    padding: 0 14px;
+    font-size: 14px;
+  }
+
+  .hero-stats,
+  .board-summary {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .resource-card,
+  .compact-card {
+    min-height: 0;
+  }
+
+  .resource-card-top,
+  .resource-card-body,
+  .resource-card-footer {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .resource-card-body {
+    padding-top: 14px;
+  }
+
+  .resource-card-footer {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .resource-actions,
+  .review-card-actions {
+    gap: 6px;
+  }
+
+  .card-action {
+    min-width: 36px;
+    min-height: var(--mobile-touch-min);
+    height: var(--mobile-touch-min);
+    border-radius: 10px;
+  }
+
+  .card-action.primary,
+  .card-action.approve,
+  .card-action.reject {
+    min-width: 0;
+    flex: 1 1 120px;
+  }
+}
+
+@media (max-width: 390px) {
+  .resources-shell {
+    width: calc(100vw - 16px);
+  }
+
+  .hero-panel,
+  .resource-board {
+    padding: 12px 10px;
+    border-radius: 14px;
+  }
+
+  .section-title-pill {
+    min-height: 46px;
+    padding: 0 12px;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .resource-name {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 320px) {
+  .resources-shell {
+    width: calc(100vw - 12px);
+  }
+
+  .hero-panel,
+  .resource-board {
+    padding: 10px 8px;
+  }
+
+  .hero-search-shell {
+    padding: 0 10px;
+  }
+
+  .toolbar-chip {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
   }
 }
 
