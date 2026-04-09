@@ -58,4 +58,9 @@ public class ArticleQueryDTO implements Serializable {
      * 每页数量
      */
     private Integer pageSize;
+
+    /**
+     * 排序方式（time: 按发布时间，stars: 按热度）
+     */
+    private String sortBy;
 }
