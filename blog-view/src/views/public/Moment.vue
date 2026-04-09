@@ -133,7 +133,7 @@ onMounted(() => {
 
 <style scoped>
 .moment-container {
-  width: 700px;
+  width: min(700px, 100%);
   padding: 20px 0;
   border-top: 1px solid var(--card-border-color, #3a3a3a);
   border-bottom: 1px solid var(--card-border-color, #3a3a3a);
@@ -203,7 +203,50 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .moment-container {
-    width: min(650px, calc(100vw - 32px));
+    width: min(650px, 100%);
+    margin: 24px auto;
+    padding: 16px 0;
+  }
+
+  .about-header {
+    margin-bottom: 24px;
+  }
+
+  .moment-author-row {
+    margin-bottom: 12px;
+  }
+
+  .moment-content {
+    line-height: 1.7;
+  }
+
+  .moment-image {
+    margin-top: 12px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 430px) {
+  .moment-author-info {
+    gap: 10px;
+  }
+
+  .moment-author-copy strong {
+    font-size: 15px;
+  }
+
+  :deep(.el-timeline-item__timestamp) {
+    font-size: 12px;
+  }
+
+  :deep(.el-card__body) {
+    padding: 12px;
+  }
+
+  :deep(.el-pagination) {
+    justify-content: center;
+    flex-wrap: wrap;
+    row-gap: 8px;
   }
 }
 </style>

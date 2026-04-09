@@ -378,6 +378,9 @@ onMounted(() => {
 .tab-table-wrap {
   min-height: 160px;
   width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tab-pagination {
@@ -392,6 +395,10 @@ onMounted(() => {
   border-radius: 14px;
   background: rgba(239, 68, 68, 0.08);
   color: #b42318;
+}
+
+:deep(.management-table) {
+  min-width: 1020px;
 }
 
 :deep(.management-table .el-table__cell) {
@@ -488,6 +495,10 @@ onMounted(() => {
     width: 100%;
   }
 
+  :deep(.tab-toolbar .el-button) {
+    min-height: var(--mobile-touch-min);
+  }
+
   .article-info-cell {
     gap: 10px;
   }
@@ -496,6 +507,22 @@ onMounted(() => {
     width: 72px;
     height: 52px;
     border-radius: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  :deep(.management-table .el-table__cell) {
+    padding: 8px 0;
+  }
+
+  :deep(.management-table .cell) {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  :deep(.table-action-button.el-button) {
+    min-height: 30px;
+    padding: 0 10px;
   }
 }
 </style>

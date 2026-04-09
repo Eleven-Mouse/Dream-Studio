@@ -39,6 +39,9 @@ const showAnnouncementStrip = computed(() => ANNOUNCEMENT_ROUTE_SET.has(route.pa
 }
 
 .layout-header {
+  height: auto;
+  padding: max(8px, var(--safe-area-top)) max(var(--mobile-gutter), var(--safe-area-right)) 8px
+    max(var(--mobile-gutter), var(--safe-area-left));
   background: transparent;
 }
 
@@ -60,12 +63,23 @@ const showAnnouncementStrip = computed(() => ANNOUNCEMENT_ROUTE_SET.has(route.pa
   flex-direction: column;
   align-items: center;
   width: 100%;
-  padding: 12px 20px 0;
+  padding: 12px max(var(--mobile-gutter), var(--safe-area-right)) 0
+    max(var(--mobile-gutter), var(--safe-area-left));
   box-sizing: border-box;
 }
 
 .layout-footer {
   margin-top: 24px;
+}
+
+@media (max-width: 720px) {
+  .layout-view {
+    padding-top: max(8px, var(--safe-area-top));
+  }
+
+  .layout-footer {
+    margin-bottom: max(12px, var(--safe-area-bottom));
+  }
 }
 
 .layout-main::-webkit-scrollbar {

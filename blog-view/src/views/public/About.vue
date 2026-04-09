@@ -17,7 +17,7 @@ import MyBotUi from '@/components/MyBotUI/MyBotUi.vue'
 
 <style scoped>
 .about-container {
-  width: 900px;
+  width: min(900px, 100%);
   padding: 20px 0;
   border-top: 1px solid var(--card-border-color, #3a3a3a);
   border-bottom: 1px solid var(--card-border-color, #3a3a3a);
@@ -40,7 +40,23 @@ import MyBotUi from '@/components/MyBotUI/MyBotUi.vue'
   margin-bottom: 40px;
 }
 .about-main {
-  width: 900px;
-  height: 1000px;
+  width: 100%;
+  min-height: 520px;
+  height: auto;
+}
+
+@media (max-width: 720px) {
+  .about-container {
+    margin: 24px auto;
+    padding: 16px 0;
+  }
+
+  .about-header {
+    margin-bottom: 22px;
+  }
+
+  .about-main {
+    min-height: 0;
+  }
 }
 </style>

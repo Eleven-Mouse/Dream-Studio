@@ -74,7 +74,7 @@ onMounted(() => {
 
 <style scoped>
 .archive-container {
-  width: 650px;
+  width: min(650px, 100%);
   padding: 20px 0;
   border-top: 1px solid var(--card-border-color, #3a3a3a);
   border-bottom: 1px solid var(--card-border-color, #3a3a3a);
@@ -114,21 +114,24 @@ onMounted(() => {
 .article-item {
   display: flex;
   align-items: center;
+  gap: 16px;
   margin-bottom: 15px;
 }
 
 .date {
+  flex: 0 0 auto;
   color: #888;
   font-size: 0.9em;
-  margin-right: 120px;
-  width: 80px;
+  width: 56px;
 }
 
 .title {
+  min-width: 0;
   color: #434343;
   text-decoration: none;
   transition: color 0.3s;
   position: relative;
+  overflow-wrap: anywhere;
 }
 
 .title:hover {
@@ -149,6 +152,39 @@ onMounted(() => {
 
 .title:hover::after {
   width: 100%;
+}
+
+@media (max-width: 720px) {
+  .archive-container {
+    margin: 24px auto;
+    padding: 16px 0;
+  }
+
+  .archive-header {
+    margin-bottom: 24px;
+  }
+
+  .article-item {
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 430px) {
+  .article-item {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .date {
+    width: auto;
+    font-size: 12px;
+  }
+
+  .title {
+    line-height: 1.5;
+  }
 }
 @keyframes fadeIn {
   from {

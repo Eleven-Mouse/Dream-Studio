@@ -81,7 +81,7 @@ watch(
   border-top: 1px solid var(--card-border-color, #3a3a3a);
   border-bottom: 1px solid var(--card-border-color, #3a3a3a);
   margin: 40px 0;
-  width: 650px;
+  width: min(650px, 100%);
 }
 .Atitle {
   animation: fadeIn 0.5s ease-out 0.3s forwards;
@@ -128,6 +128,7 @@ watch(
   color: #6f6f6f;
   text-decoration: none;
   transition: color 0.3s;
+  overflow-wrap: anywhere;
 }
 .directory-list li::before {
   /* 显示自定义编号 */
@@ -149,6 +150,23 @@ watch(
 
 /* 在小屏幕上，恢复为单栏布局 */
 @media (max-width: 768px) {
+  .tags-card {
+    width: 100%;
+    margin: 24px 0;
+    padding: 16px 0;
+  }
+
+  .Atitle {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .Atitle :deep(.el-col) {
+    max-width: 100%;
+    flex: 0 0 100%;
+  }
+
   .directory-list {
     column-count: 1;
   }
