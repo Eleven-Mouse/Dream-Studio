@@ -1,7 +1,11 @@
-create table announcement
+CREATE DATABASE IF NOT EXISTS blog DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+USE blog;
+
+create table if not exists announcement
 (
     id           bigint auto_increment comment '公告ID'
-        primary key,
+    primary key,
     author_id    bigint                             not null comment '发布人用户ID',
     title        varchar(200)                       not null comment '公告标题',
     content      text                               not null comment '公告内容',
@@ -9,16 +13,16 @@ create table announcement
     publish_time datetime                           null comment '发布时间',
     create_time  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间'
-)
+    )
     comment '站点公告表';
 
 create index idx_announcement_status
     on announcement (status, publish_time);
 
-create table article
+create table if not exists article
 (
     id           bigint auto_increment comment '文章ID'
-        primary key,
+    primary key,
     author_id    bigint                               null comment '作者用户ID',
     title        varchar(200)                         not null comment '文章标题',
     summary      varchar(500)                         null comment '文章摘要',
@@ -34,7 +38,7 @@ create table article
     cover_image  varchar(1000)                        null,
     tags         varchar(256)                         null,
     stars        int                                  not null comment '点赞数'
-)
+    )
     comment '文章表';
 
 create index idx_category_id
@@ -46,23 +50,23 @@ create index idx_publish_time
 create index idx_status
     on article (status);
 
-create table category
+create table if not exists category
 (
     id            bigint auto_increment comment '分类ID'
-        primary key,
+    primary key,
     name          varchar(50)                        not null comment '分类名称',
     create_time   datetime default CURRENT_TIMESTAMP null comment '创建时间',
     update_time   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
     article_count int                                null,
     constraint uk_name
-        unique (name)
-)
+    unique (name)
+    )
     comment '分类表';
 
-create table comment
+create table if not exists comment
 (
     id              bigint auto_increment comment '评论ID'
-        primary key,
+    primary key,
     user_id         bigint                               null comment '评论用户ID',
     nickname        varchar(100)                         not null comment '昵称',
     email           varchar(200)                         null comment '邮箱',
@@ -78,7 +82,7 @@ create table comment
     adminComment    tinyint(1)                           null,
     parentCommentId mediumtext                           null,
     page            varchar(200)                         null comment '所在页面：0普通文章，1友链页面'
-)
+    )
     comment '评论表';
 
 create index idx_article_id
@@ -87,10 +91,10 @@ create index idx_article_id
 create index idx_create_time
     on comment (create_time);
 
-create table forum_post
+create table if not exists forum_post
 (
     id                 bigint auto_increment comment '帖子ID'
-        primary key,
+    primary key,
     author_id          bigint                               null comment '作者用户ID',
     title              varchar(200)                         not null comment '帖子标题',
     summary            varchar(500)                         null comment '帖子摘要',
@@ -107,7 +111,7 @@ create table forum_post
     create_time        datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time        datetime   default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     last_activity_time datetime   default CURRENT_TIMESTAMP not null comment '最后活跃时间'
-)
+    )
     comment '论坛帖子表';
 
 create index idx_forum_post_activity
@@ -122,10 +126,10 @@ create index idx_forum_post_create_time
 create index idx_forum_post_featured
     on forum_post (is_featured, is_pinned);
 
-create table forum_report
+create table if not exists forum_report
 (
     id            bigint auto_increment comment '举报ID'
-        primary key,
+    primary key,
     reporter_id   bigint                                not null comment '举报人用户ID',
     target_type   varchar(50)                           not null comment '举报目标类型',
     target_id     bigint                                not null comment '举报目标ID',
@@ -138,7 +142,7 @@ create table forum_report
     reviewer_note varchar(500)                          null comment '处理备注',
     create_time   datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time   datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间'
-)
+    )
     comment '论坛举报表';
 
 create index idx_forum_report_reporter
@@ -150,10 +154,10 @@ create index idx_forum_report_status
 create index idx_forum_report_target
     on forum_report (target_type, target_id);
 
-create table moment
+create table if not exists moment
 (
     id           bigint auto_increment comment '动态ID'
-        primary key,
+    primary key,
     author_id    bigint                             null comment '作者用户ID',
     content      text                               not null comment '动态内容',
     image        varchar(1000)                      null comment '动态图片（多个图片用逗号分隔）',
@@ -163,7 +167,7 @@ create table moment
     publish_time datetime                           null comment '发布时间',
     create_time  datetime default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time  datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间'
-)
+    )
     comment '动态表';
 
 create index idx_create_time
@@ -178,10 +182,10 @@ create index idx_publish_time
 create index idx_status
     on moment (status);
 
-create table operation_log
+create table if not exists operation_log
 (
     id             bigint auto_increment comment '日志ID'
-        primary key,
+    primary key,
     module         varchar(50)                        null comment '操作模块',
     type           varchar(20)                        null comment '操作类型：CREATE-新增，UPDATE-修改，DELETE-删除，QUERY-查询',
     description    varchar(500)                       null comment '操作描述',
@@ -197,7 +201,7 @@ create table operation_log
     status         tinyint  default 1                 null comment '状态：0-失败，1-成功',
     error_message  text                               null comment '错误信息',
     create_time    datetime default CURRENT_TIMESTAMP null comment '创建时间'
-)
+    )
     comment '操作日志表';
 
 create index idx_create_time
@@ -206,10 +210,10 @@ create index idx_create_time
 create index idx_user_id
     on operation_log (user_id);
 
-create table site_resource
+create table if not exists site_resource
 (
     id             bigint auto_increment comment '资源ID'
-        primary key,
+    primary key,
     uploader_id    bigint                                not null comment '上传者用户ID',
     original_name  varchar(255)                          not null comment '原始文件名',
     file_url       varchar(1000)                         not null comment '资源访问地址',
@@ -224,7 +228,7 @@ create table site_resource
     create_time    datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time    datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     review_time    datetime                              null comment '审核时间'
-)
+    )
     comment '站点资源表';
 
 create index idx_site_resource_category
@@ -236,10 +240,10 @@ create index idx_site_resource_status
 create index idx_site_resource_uploader
     on site_resource (uploader_id, create_time);
 
-create table system_config
+create table if not exists system_config
 (
     id           bigint auto_increment comment '配置ID'
-        primary key,
+    primary key,
     config_key   varchar(100)                          not null comment '配置键',
     config_value text                                  null comment '配置值',
     config_type  varchar(20) default 'STRING'          null comment '配置类型：STRING/NUMBER/BOOLEAN/JSON',
@@ -247,27 +251,27 @@ create table system_config
     create_time  datetime    default CURRENT_TIMESTAMP null comment '创建时间',
     update_time  datetime    default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
     constraint uk_config_key
-        unique (config_key)
-)
+    unique (config_key)
+    )
     comment '系统配置表';
 
-create table tags
+create table if not exists tags
 (
     id            bigint auto_increment comment '标签ID'
-        primary key,
+    primary key,
     name          varchar(50)                        not null comment '标签名称',
     create_time   datetime default CURRENT_TIMESTAMP null comment '创建时间',
     update_time   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
     article_count int                                null,
     constraint uk_name
-        unique (name)
-)
+    unique (name)
+    )
     comment '标签表';
 
-create table user
+create table if not exists user
 (
     id              bigint auto_increment comment '用户ID'
-        primary key,
+    primary key,
     username        varchar(50)                           not null comment '用户名',
     password        varchar(255)                          not null comment '密码（加密）',
     nickname        varchar(50)                           null comment '昵称',
@@ -280,14 +284,14 @@ create table user
     create_time     datetime    default CURRENT_TIMESTAMP null comment '创建时间',
     update_time     datetime    default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
     constraint uk_username
-        unique (username)
-)
+    unique (username)
+    )
     comment '用户表';
 
-create table user_account
+create table if not exists user_account
 (
     id              bigint auto_increment comment '用户ID'
-        primary key,
+    primary key,
     username        varchar(100)                          not null comment '系统用户名',
     github_id       bigint                                null comment 'GitHub 用户ID',
     github_login    varchar(100)                          null comment 'GitHub 登录名',
@@ -303,18 +307,18 @@ create table user_account
     create_time     datetime    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_time     datetime    default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
     constraint uk_user_account_github_id
-        unique (github_id),
+    unique (github_id),
     constraint uk_user_account_github_login
-        unique (github_login),
+    unique (github_login),
     constraint uk_user_account_username
-        unique (username)
-)
+    unique (username)
+    )
     comment '站点用户账号表（GitHub OAuth）';
 
-create table user_notification
+create table if not exists user_notification
 (
     id                bigint auto_increment comment '通知ID'
-        primary key,
+    primary key,
     user_id           bigint                               not null comment '接收人用户ID',
     type              varchar(50)                          not null comment '通知类型',
     title             varchar(255)                         not null comment '通知标题',
@@ -325,7 +329,7 @@ create table user_notification
     is_read           tinyint(1) default 0                 not null comment '是否已读',
     create_time       datetime   default CURRENT_TIMESTAMP not null comment '创建时间',
     read_time         datetime                             null comment '已读时间'
-)
+    )
     comment '用户通知表';
 
 create index idx_user_notification_read
