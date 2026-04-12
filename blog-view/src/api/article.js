@@ -31,6 +31,19 @@ export function fetchArticleById(id) {
   })
 }
 
+/**
+ * 点赞/取消点赞文章
+ * @param {number} articleId - 文章ID
+ * @param {boolean} like - true点赞，false取消点赞
+ */
+export function toggleArticleLike(articleId, like = true) {
+  return request({
+    url: `/articles/${articleId}/like`,
+    method: 'post',
+    data: { like },
+  })
+}
+
 export function fetchManagedArticles(params) {
   return request({
     baseURL: '',

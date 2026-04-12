@@ -108,5 +108,8 @@ public interface ArticleMapper {
     @Update("UPDATE article SET view_count = #{count} WHERE id = #{articleId}")
     void updateViewCount(Long articleId, Integer count);
 
+    @Update("UPDATE article SET stars = #{stars} WHERE id = #{articleId}")
+    void updateStars(@Param("articleId") Long articleId, @Param("stars") Long stars);
+
     List<HeadlineItemVO> selectHeadlineItems();
 }

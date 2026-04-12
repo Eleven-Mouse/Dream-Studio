@@ -39,8 +39,25 @@
           </el-carousel>
         </div>
 
+        <div class="sort-buttons">
+          <button
+            class="sort-btn"
+            :class="{ active: currentSort === 'time' }"
+            @click="changeSort('time')"
+          >
+            最新
+          </button>
+          <button
+            class="sort-btn"
+            :class="{ active: currentSort === 'stars' }"
+            @click="changeSort('stars')"
+          >
+            最热
+          </button>
+        </div>
+
         <div class="article-list">
-          <ArticleCard v-for="(article, index) in articles" :key="index" :article="article" />
+          <ArticleCard v-for="article in articles" :key="article.id" :article="article" />
         </div>
         <div v-if="loading" :data="getArticles" style="width: 100%" class="loading-tip">
           正在加载文章...
@@ -101,6 +118,9 @@ const loading = ref(true)
 const featuredLoading = ref(false)
 const error = ref(null)
 
+// 排序方式
+const currentSort = ref('time')
+
 const featuredFallbacks = [
   'radial-gradient(circle at 16% 20%, rgba(255, 238, 203, 0.95) 0%, rgba(255, 238, 203, 0) 32%), linear-gradient(135deg, #10315c 0%, #1d5b8f 45%, #f28d35 100%)',
   'radial-gradient(circle at 82% 18%, rgba(255, 224, 198, 0.92) 0%, rgba(255, 224, 198, 0) 28%), linear-gradient(135deg, #31473a 0%, #6b8f71 44%, #d7a86e 100%)',
@@ -150,6 +170,8 @@ const getArticles = async (page = 1) => {
       page,
       size: pagination.value.size,
       keyword: keyword || undefined,
+      sortBy: currentSort.value === 'stars' ? 'stars' : 'publishTime',
+      order: currentSort.value === 'stars' ? 'desc' : 'desc',
     })
     articles.value = response.data
     pagination.value.total = response.pagination.total
@@ -178,6 +200,13 @@ const getFeaturedArticles = async () => {
   } finally {
     featuredLoading.value = false
   }
+}
+
+// 切换排序方式
+const changeSort = (sort) => {
+  if (currentSort.value === sort) return
+  currentSort.value = sort
+  getArticles(1)
 }
 
 // 分页
@@ -350,6 +379,34 @@ watch(
 
 .article-card {
   margin-bottom: 20px;
+}
+
+.sort-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.sort-btn {
+  padding: 8px 20px;
+  border: 1px solid #dcdfe6;
+  border-radius: 20px;
+  background: #fff;
+  color: #606266;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.sort-btn:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.sort-btn.active {
+  border-color: #409eff;
+  background: #409eff;
+  color: #fff;
 }
 
 .article-meta {

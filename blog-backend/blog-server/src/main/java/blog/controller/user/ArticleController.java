@@ -3,6 +3,8 @@ package blog.controller.user;
 import blog.dto.ArticleDTO;
 import blog.dto.ArticleQueryDTO;
 import blog.entity.Article;
+import blog.mapper.ArticleMapper;
+import blog.result.ApiResponse;
 import blog.result.Result;
 import blog.service.ArticleService;
 import blog.vo.ArticleVO;
@@ -29,6 +31,9 @@ public class ArticleController {
 
     @Autowired
     private ArticleService articleService;
+
+    @Autowired
+    private ArticleMapper articleMapper;
 
     /**
      * 获取文章列表（支持分页）
@@ -115,6 +120,34 @@ public class ArticleController {
             result.put("pagination", pagination);
 
             return Result.success(result);
+        }
+    }
+
+    /**
+     * 点赞/取消点赞文章
+     */
+    @PostMapping("/{id}/like")
+    @ApiOperation("点赞/取消点赞文章")
+    public Result<Map<String, Object>> toggleLike(@PathVariable Long id,
+                                                  @RequestBody Map<String, Boolean> body) {
+        try {
+            ArticleVO article = articleMapper.selectById(id);
+            if (article == null) {
+                return Result.error("文章不存在");
+            }
+
+            boolean like = body == null || !Boolean.FALSE.equals(body.get("like"));
+            int currentStars = article.getStars() == null ? 0 : article.getStars();
+            int newStars = like ? currentStars + 1 : Math.max(0, currentStars - 1);
+            articleMapper.updateStars((long) id, (long) newStars);
+
+            Map<String, Object> data = new HashMap<>();
+            data.put("stars", newStars);
+            data.put("liked", like);
+            return Result.success(data);
+        } catch (Exception e) {
+            log.error("点赞失败", e);
+            return Result.error("点赞失败，请稍后再试");
         }
     }
 

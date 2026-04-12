@@ -48,6 +48,10 @@ public class ArticleLikeServiceImpl implements ArticleLikeService {
 
         Long likeCount = articleLikeMapper.countByArticleId(articleId);
         boolean liked = like && articleLikeMapper.exists(articleId, userId) != null;
+
+        // 同步更新 article 表的 stars 字段
+        articleMapper.updateStars(articleId, likeCount);
+
         return new LikeStatusVO(articleId, likeCount, liked);
     }
 }

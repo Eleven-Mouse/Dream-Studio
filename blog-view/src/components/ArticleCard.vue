@@ -31,6 +31,12 @@
             <span v-if="article.viewCount"
               ><el-icon><View /></el-icon>{{ article.viewCount }}</span
             >
+            <span class="star-action" @click.stop.prevent="handleLike">
+              <el-icon :class="{ 'is-liked': localLiked }">
+                <StarFilled v-if="localLiked" />
+                <Star v-else />
+              </el-icon>{{ localLikeCount }}
+            </span>
           </div>
 
           <div class="more">
@@ -43,8 +49,11 @@
 </template>
 
 <script setup>
-import { Clock, FolderOpened, PriceTag, View } from '@element-plus/icons-vue'
-import { defineProps, computed } from 'vue'
+import { Clock, FolderOpened, PriceTag, View, Star, StarFilled } from '@element-plus/icons-vue'
+import { defineProps, computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { toggleArticleLike } from '@/api/article.js'
+import { useUserStore } from '@/store/user'
 
 const props = defineProps({
   article: {
@@ -52,6 +61,31 @@ const props = defineProps({
     required: true,
   },
 })
+
+const userStore = useUserStore()
+const isLoggedIn = computed(() => userStore.isLoggedIn)
+
+const localLiked = ref(false)
+const localLikeCount = ref(props.article.stars || 0)
+const likeLoading = ref(false)
+
+const handleLike = async () => {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录后再点赞')
+    return
+  }
+  if (likeLoading.value) return
+  likeLoading.value = true
+  try {
+    const response = await toggleArticleLike(props.article.id, !localLiked.value)
+    localLikeCount.value = response?.stars ?? localLikeCount.value
+    localLiked.value = Boolean(response?.liked)
+  } catch (err) {
+    ElMessage.error(err.message || '点赞失败，请稍后再试')
+  } finally {
+    likeLoading.value = false
+  }
+}
 
 const uploadBaseUrl = import.meta.env.VITE_APP_UPLOAD_URL || ''
 
@@ -172,6 +206,19 @@ const coverImageUrl = computed(() => {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+.star-action {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.star-action:hover {
+  color: #e6a23c;
+}
+
+.star-action .is-liked {
+  color: #e6a23c;
 }
 
 .more a {

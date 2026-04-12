@@ -163,9 +163,20 @@ public class ArticleServiceImpl implements ArticleService {
         }
 
         articles = new java.util.ArrayList<>(articles);
+
+        // 从 Redis 获取真实浏览量，覆盖数据库中的 viewCount（数据库中始终为 0）
+        Map<Object, Object> viewCounts = viewCountService.getAllViewCounts();
+        articles.forEach(article -> {
+            Object count = viewCounts.get(String.valueOf(article.getId()));
+            if (count != null) {
+                article.setViewCount(Integer.parseInt((String) count));
+            }
+        });
+
         if ("stars".equalsIgnoreCase(queryDTO.getSortBy())) {
             articles.sort(Comparator
-                    .comparing((ArticleVO article) -> article.getStars() == null ? 0 : article.getStars(), Comparator.reverseOrder())
+                    .comparing((ArticleVO article) -> article.getViewCount() == null ? 0 : article.getViewCount(), Comparator.reverseOrder())
+                    .thenComparing(article -> article.getStars() == null ? 0 : article.getStars(), Comparator.reverseOrder())
                     .thenComparing(article -> article.getPublishTime() != null ? article.getPublishTime() : article.getCreateTime(), Comparator.nullsLast(Comparator.reverseOrder())));
         } else {
             articles.sort(Comparator.comparing(
