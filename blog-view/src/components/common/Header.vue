@@ -2,13 +2,12 @@
   <div class="header-wrapper" :class="{ 'is-hidden': isHeaderHidden }">
     <div class="header-container">
       <div class="logo">
-        <router-link to="/home">Dream-studio</router-link>
+        <router-link to="/home">梦工厂</router-link>
       </div>
       <div class="search-bar">
         <el-autocomplete
           v-model="searchInput"
           class="search-input"
-          placeholder="Please Input"
           :prefix-icon="Search"
           :fetch-suggestions="querySearchArticles"
           :trigger-on-focus="false"
@@ -328,11 +327,10 @@ const handleLogout = async () => {
   font-weight: bold;
   color: var(--app-text-color);
   text-decoration: none;
-  margin-right: 20px;
 }
 
 .search-bar {
-  width: 220px;
+  width: 100px;
   margin: 0 auto;
 }
 
