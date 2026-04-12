@@ -4,19 +4,48 @@
       <div class="logo">
         <router-link to="/home">梦工厂</router-link>
       </div>
-      <div class="search-bar">
-        <el-autocomplete
-          v-model="searchInput"
-          class="search-input"
-          :prefix-icon="Search"
-          :fetch-suggestions="querySearchArticles"
-          :trigger-on-focus="false"
-          value-key="title"
-          clearable
-          @select="handleSelectArticle"
-          :popper-append-to-body="false"
-        />
+      <div class="search-bar" @click="searchDialogVisible = true">
+        <el-icon class="search-icon-btn" :size="20"><Search /></el-icon>
       </div>
+
+      <!-- 搜索弹窗 -->
+      <teleport to="body">
+        <transition name="search-overlay">
+          <div v-if="searchDialogVisible" class="search-overlay" @click.self="searchDialogVisible = false">
+            <div class="search-modal">
+              <div class="search-modal-header">
+                <el-input
+                  ref="searchInputRef"
+                  v-model="searchInput"
+                  class="search-modal-input"
+                  :prefix-icon="Search"
+                  clearable
+                  placeholder="搜索文章..."
+                  size="large"
+                />
+              </div>
+              <div class="search-modal-body">
+                <div v-if="searchLoading" class="search-result-tip">搜索中...</div>
+                <div v-else-if="searchInput && !searchResults.length" class="search-result-tip">
+                  未找到相关文章
+                </div>
+                <div v-else-if="!searchInput" class="search-result-tip">输入关键词搜索文章</div>
+                <div v-else class="search-result-list">
+                  <div
+                    v-for="item in searchResults"
+                    :key="item.id"
+                    class="search-result-item"
+                    @click="handleSelectArticle(item)"
+                  >
+                    <span class="search-result-title">{{ item.title }}</span>
+                    <span v-if="item.categoryName" class="search-result-category">{{ item.categoryName }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </teleport>
       <el-menu
         :default-active="activeIndex"
         class="nav-menu"
@@ -92,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted, computed, h } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed, h, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCategories } from '@/api/categories'
 import { fetchArticles } from '@/api/article.js'
@@ -120,8 +149,11 @@ const authStore = useAuthStore()
 const userStore = useUserStore()
 const activeIndex = ref('/home')
 const searchInput = ref('')
+const searchDialogVisible = ref(false)
+const searchInputRef = ref(null)
 const categories = ref([])
 const searchLoading = ref(false)
+const searchResults = ref([])
 const currentCategoryId = ref(null)
 const scrollProgress = ref(0)
 const isHeaderHidden = ref(false)
@@ -251,30 +283,28 @@ watch(
   },
 )
 
-// 自动补全：根据输入关键字异步获取文章标题列表
-const querySearchArticles = async (queryString, cb) => {
-  const keyword = queryString.trim()
+// 监听搜索关键字变化，实时查询文章
+let searchTimer = null
+watch(searchInput, (val) => {
+  clearTimeout(searchTimer)
+  const keyword = val.trim()
   if (!keyword) {
-    cb([])
+    searchResults.value = []
     return
   }
-
-  searchLoading.value = true
-  try {
-    const res = await fetchArticles({
-      page: 1,
-      size: 5,
-      keyword,
-    })
-    const list = res?.data || []
-    cb(list)
-  } catch (e) {
-    console.error('搜索文章失败', e)
-    cb([])
-  } finally {
-    searchLoading.value = false
-  }
-}
+  searchTimer = setTimeout(async () => {
+    searchLoading.value = true
+    try {
+      const res = await fetchArticles({ page: 1, size: 8, keyword })
+      searchResults.value = res?.data || []
+    } catch (e) {
+      console.error('搜索文章失败', e)
+      searchResults.value = []
+    } finally {
+      searchLoading.value = false
+    }
+  }, 300)
+})
 
 // 选择某个搜索建议后，跳转到文章详情，并清空搜索框
 const handleSelectArticle = (item) => {
@@ -282,7 +312,35 @@ const handleSelectArticle = (item) => {
   router.push(`/article/${item.id}`)
   // 跳转后清空输入内容
   searchInput.value = ''
+  searchDialogVisible.value = false
 }
+
+// 弹窗打开时自动聚焦搜索输入框
+watch(searchDialogVisible, (visible) => {
+  if (visible) {
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
+  } else {
+    searchInput.value = ''
+    searchResults.value = []
+  }
+})
+
+// Escape 键关闭搜索弹窗
+const handleSearchKeydown = (e) => {
+  if (e.key === 'Escape' && searchDialogVisible.value) {
+    searchDialogVisible.value = false
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleSearchKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleSearchKeydown)
+})
 
 const goToProfile = () => {
   if (canViewAdminDashboard.value) {
@@ -317,11 +375,6 @@ const handleLogout = async () => {
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
-/* 针对输入框的焦点状态 */
-.search-bar ::v-deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px var(--app-text-color) inset !important; /* !important确保覆盖默认样式 */
-}
-
 .logo a {
   font-size: 22px;
   font-weight: bold;
@@ -330,14 +383,152 @@ const handleLogout = async () => {
 }
 
 .search-bar {
-  width: 100px;
-  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background-color 0.25s ease;
 }
 
-.search-bar .el-input {
-  --el-input-bg-color: rgba(255, 255, 255, 0.44);
-  --el-input-text-color: var(--app-text-color);
-  --el-input-border-color: rgba(148, 163, 184, 0.18);
+.search-bar:hover {
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.search-icon-btn {
+  color: var(--app-text-color);
+}
+
+/* 搜索弹窗 - 遮罩层 */
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 18vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* 搜索弹窗 - 弹出框 */
+.search-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 90vw);
+  max-height: 60vh;
+  border-radius: 16px;
+  background: var(--el-bg-color, #fff);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.search-modal-header {
+  padding: 20px 24px 12px;
+}
+
+.search-modal-input {
+  width: 100%;
+}
+
+.search-modal-input ::v-deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px var(--el-border-color, #dcdfe6) inset !important;
+  border-radius: 10px;
+}
+
+.search-modal-input ::v-deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--app-text-color) inset !important;
+}
+
+.search-modal-body {
+  flex: 1;
+  min-height: 180px;
+  padding: 0 24px 20px;
+  overflow-y: auto;
+}
+
+.search-result-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 120px;
+  color: var(--el-text-color-placeholder, #a8abb2);
+  font-size: 0.92rem;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.search-result-item:hover {
+  background: var(--el-fill-color-light, #f5f7fa);
+}
+
+.search-result-title {
+  flex: 1;
+  font-size: 0.95rem;
+  color: var(--el-text-color-primary, #303133);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.search-result-category {
+  flex-shrink: 0;
+  margin-left: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--el-fill-color, #f0f2f5);
+  color: var(--el-text-color-secondary, #909399);
+  font-size: 0.78rem;
+}
+
+/* 弹窗过渡动画 */
+.search-overlay-enter-active {
+  transition: opacity 0.25s ease;
+}
+
+.search-overlay-enter-active .search-modal {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+}
+
+.search-overlay-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.search-overlay-leave-active .search-modal {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.search-overlay-enter-from {
+  opacity: 0;
+}
+
+.search-overlay-enter-from .search-modal {
+  transform: translateY(-20px) scale(0.97);
+  opacity: 0;
+}
+
+.search-overlay-leave-to {
+  opacity: 0;
+}
+
+.search-overlay-leave-to .search-modal {
+  transform: translateY(-10px) scale(0.98);
+  opacity: 0;
 }
 
 .nav-menu {
