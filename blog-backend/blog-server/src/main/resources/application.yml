@@ -1,4 +1,13 @@
 spring:
+  ai:
+    model:
+      embedding: ollama
+    ollama:
+      base-url: ${SPRING_AI_OLLAMA_BASE_URL:http://localhost:11434}
+      embedding:
+        options:
+          model: ${SPRING_AI_OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+          truncate: true
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/eleven_blog?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
     username: ${SPRING_DATASOURCE_USERNAME:root}
@@ -59,6 +68,13 @@ object-storage:
   path-style-access: ${OBJECT_STORAGE_PATH_STYLE_ACCESS:true}
 
 blog:
+  ai:
+    enabled: ${BLOG_AI_ENABLED:true}
+    search:
+      cache-ttl-seconds: ${BLOG_AI_SEARCH_CACHE_TTL_SECONDS:900}
+      max-content-length: ${BLOG_AI_SEARCH_MAX_CONTENT_LENGTH:2400}
+      default-similar-limit: ${BLOG_AI_DEFAULT_SIMILAR_LIMIT:5}
+      refresh-minutes: ${BLOG_AI_REFRESH_MINUTES:30}
   owner:
     email: ${BLOG_OWNER_EMAIL:your-email@example.com}
     avatar: ${BLOG_OWNER_AVATAR:your-avatar-url.png}

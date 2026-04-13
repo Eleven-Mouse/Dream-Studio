@@ -32,6 +32,31 @@ export function fetchArticleById(id) {
 }
 
 /**
+ * AI 语义搜索文章。
+ *
+ * 这里新增独立接口，而不是改 fetchArticles，
+ * 是为了不影响现有普通文章列表和关键词搜索调用方。
+ */
+export function fetchAiArticleSearch(params) {
+  return request({
+    url: '/ai/articles/search',
+    method: 'get',
+    params,
+  })
+}
+
+/**
+ * 获取相关文章推荐。
+ */
+export function fetchSimilarArticles(articleId, params) {
+  return request({
+    url: `/ai/articles/${articleId}/similar`,
+    method: 'get',
+    params,
+  })
+}
+
+/**
  * 点赞/取消点赞文章
  * @param {number} articleId - 文章ID
  * @param {boolean} like - true点赞，false取消点赞

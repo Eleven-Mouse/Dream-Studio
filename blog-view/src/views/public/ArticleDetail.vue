@@ -121,8 +121,8 @@
 <script setup>
 import { ref, onMounted, nextTick, computed, watch, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeftBold, Collection, PictureRounded } from '@element-plus/icons-vue'
-import { fetchArticleById } from '@/api/article.js'
+import { ArrowLeftBold, Collection } from '@element-plus/icons-vue'
+import { fetchArticleById, fetchSimilarArticles } from '@/api/article.js'
 import { fetchCategories } from '@/api/categories'
 import { fetchTags } from '@/api/tags'
 import CommentsCard from '@/components/CommentsCard.vue'
@@ -142,6 +142,7 @@ const catalogPanelRef = ref(null)
 const scrollContainer = ref(null)
 const tagOptions = ref([])
 const categoryOptions = ref([])
+const similarArticles = ref([])
 
 const authorInitial = computed(() => {
   return (article.value?.authorNickname || 'A').slice(0, 1).toUpperCase()
@@ -199,16 +200,6 @@ const tagLookup = computed(() => {
   return lookup
 })
 
-const categoryLookup = computed(() => {
-  const lookup = new Map()
-  categoryOptions.value.forEach((item) => {
-    if (item?.id != null) {
-      lookup.set(Number(item.id), item)
-    }
-  })
-  return lookup
-})
-
 const formattedTags = computed(() =>
   normalizeTags(article.value?.tags).map((tag, index) => {
     const matchedTag =
@@ -258,21 +249,17 @@ const loadTaxonomyOptions = async () => {
   }
 }
 
-// list 里的 text 就是现在正文里的实际 ID
 const onGetCatalog = (list) => {
   catalogList.value = list.map((item, index) => ({
     ...item,
-    // 这里绝对不要用 item.text，只用 index
     uniqueId: `heading-${index}`,
   }))
 
   nextTick(() => {
-    // 找到预览区域内所有的标题标签
     const previewEl = document.querySelector('#preview-only .md-editor-preview')
     if (previewEl) {
       const headings = previewEl.querySelectorAll('h1, h2, h3, h4, h5, h6')
       headings.forEach((el, index) => {
-        // 强制覆盖原来的 ID，改为 heading-0, heading-1...
         el.setAttribute('id', `heading-${index}`)
       })
     }
@@ -323,6 +310,7 @@ const formatTime = (datetime) => {
 const loadArticle = async (articleId) => {
   error.value = null
   article.value = null
+  similarArticles.value = []
   catalogList.value = []
   catalogDrawerVisible.value = true
 
@@ -333,8 +321,28 @@ const loadArticle = async (articleId) => {
 
   loading.value = true
   try {
-    const [data] = await Promise.all([fetchArticleById(articleId), loadTaxonomyOptions()])
-    article.value = data || null
+    const [articleRes, taxonomyRes, similarRes] = await Promise.allSettled([
+      fetchArticleById(articleId),
+      loadTaxonomyOptions(),
+      fetchSimilarArticles(articleId, { limit: 5 }),
+    ])
+
+    if (articleRes.status === 'fulfilled') {
+      article.value = articleRes.value || null
+    } else {
+      throw articleRes.reason
+    }
+
+    if (taxonomyRes.status === 'rejected') {
+      console.warn('加载文章分类/标签选项失败', taxonomyRes.reason)
+    }
+
+    if (similarRes.status === 'fulfilled') {
+      similarArticles.value = Array.isArray(similarRes.value) ? similarRes.value : []
+    } else {
+      console.warn('加载相关文章失败', similarRes.reason)
+      similarArticles.value = []
+    }
   } catch (err) {
     error.value = '加载文章失败，请稍后再试。'
     console.error(err)
@@ -725,6 +733,11 @@ watch(
   overflow: visible !important;
 }
 @media screen and (max-width: 900px) {
+  .article-detail-container {
+    width: 100%;
+    padding: 0 2px;
+  }
+
   .main-content-area {
     display: block;
   }
@@ -756,10 +769,20 @@ watch(
     top: 84px;
   }
 
+  .catalog-panel-body {
+    padding-left: 12px;
+  }
+
+  .catalog-drawer-card {
+    width: min(280px, calc(100vw - 24px));
+  }
+
   .catalog-handle {
-    width: 56px;
-    min-width: 56px;
-    height: 48px;
+    top: 8px;
+    left: -52px;
+    width: 52px;
+    min-width: 52px;
+    height: 44px;
   }
 
   .article-detail-title {
@@ -774,6 +797,10 @@ watch(
   .article-meta {
     justify-content: flex-start;
     white-space: normal;
+  }
+
+  .taxonomy-group {
+    gap: 10px;
   }
 
   .comments-section {
@@ -792,6 +819,69 @@ watch(
 
   .comments-section :deep(.comments-card) {
     padding: 22px 20px;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .article-detail-container {
+    margin-top: 4px;
+  }
+
+  .catalog-affix-shell {
+    top: 74px;
+  }
+
+  .catalog-panel-body {
+    padding-left: 10px;
+  }
+
+  .catalog-drawer-card {
+    width: min(260px, calc(100vw - 20px));
+  }
+
+  .catalog-handle {
+    top: 6px;
+    left: -46px;
+    width: 46px;
+    min-width: 46px;
+    height: 40px;
+  }
+
+  .catalog-handle-main {
+    font-size: 16px;
+  }
+
+  .catalog-handle-arrow {
+    font-size: 12px;
+  }
+
+  .article-kicker {
+    margin-bottom: 10px;
+  }
+
+  .article-author-info {
+    align-items: flex-start;
+  }
+
+  .article-author-info strong {
+    font-size: 15px;
+  }
+
+  .article-meta {
+    font-size: 13px;
+  }
+
+  .taxonomy-label,
+  .taxonomy-tag {
+    font-size: 12px;
+  }
+
+  :deep(.article-content-card .el-card__body) {
+    padding: 20px 16px;
+  }
+
+  .comments-section :deep(.comments-card) {
+    padding: 18px 16px;
   }
 }
 @keyframes fadeIn {

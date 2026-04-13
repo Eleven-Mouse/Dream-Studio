@@ -1,7 +1,7 @@
 <template>
   <div class="home-container">
     <el-row :gutter="20" class="main-content">
-      <el-col :xs="20" :sm="10" :md="18">
+      <el-col :xs="24" :sm="10" :md="18">
         <div
           v-if="!route.query.keyword && (featuredLoading || featuredArticles.length)"
           v-loading="featuredLoading"
@@ -123,8 +123,6 @@ const currentSort = ref('time')
 
 const featuredFallbacks = [
   'radial-gradient(circle at 16% 20%, rgba(255, 238, 203, 0.95) 0%, rgba(255, 238, 203, 0) 32%), linear-gradient(135deg, #10315c 0%, #1d5b8f 45%, #f28d35 100%)',
-  'radial-gradient(circle at 82% 18%, rgba(255, 224, 198, 0.92) 0%, rgba(255, 224, 198, 0) 28%), linear-gradient(135deg, #31473a 0%, #6b8f71 44%, #d7a86e 100%)',
-  'radial-gradient(circle at 24% 18%, rgba(255, 235, 211, 0.92) 0%, rgba(255, 235, 211, 0) 34%), linear-gradient(135deg, #2f2548 0%, #4b4e9b 48%, #e78267 100%)',
   'radial-gradient(circle at 78% 24%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 26%), linear-gradient(135deg, #3d2c2e 0%, #a05c5c 48%, #f5c26b 100%)',
 ]
 
@@ -497,39 +495,166 @@ watch(
 
 @media (max-width: 767px) {
   .home-container {
-    margin-top: 34px;
+    margin-top: 28px;
+    padding: 0 2px 20px;
+  }
+
+  .main-content {
+    --el-row-gutter: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    row-gap: 18px;
+  }
+
+  .main-content > :deep(.el-col) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
   }
 
   .featured-carousel-shell {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
+  }
+
+  .featured-carousel {
+    border-radius: 18px;
+  }
+
+  .featured-carousel-shell :deep(.el-carousel__container) {
+    border-radius: 18px;
+  }
+
+  .featured-carousel-shell :deep(.el-carousel__arrow) {
+    width: 34px;
+    height: 34px;
+  }
+
+  .featured-carousel-shell :deep(.el-carousel__indicators--outside) {
+    margin-top: -4px;
+  }
+
+  .featured-carousel-shell :deep(.el-carousel__button) {
+    width: 24px;
   }
 
   .featured-slide {
     align-items: flex-end;
-    padding: 24px 20px;
+    padding: 22px 18px;
+    border-radius: 18px;
+  }
+
+  .featured-slide__content {
+    max-width: 100%;
+  }
+
+  .featured-slide__eyebrow {
+    margin-bottom: 10px;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
   }
 
   .featured-slide__content h2 {
-    font-size: 1.65rem;
+    font-size: 1.45rem;
+    line-height: 1.25;
   }
 
   .featured-slide__content p {
-    font-size: 0.94rem;
-    line-height: 1.6;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    -webkit-line-clamp: 3;
   }
 
   .featured-slide__meta {
     gap: 8px;
-    margin-top: 14px;
+    margin-top: 12px;
   }
 
   .featured-slide__meta span {
-    font-size: 0.8rem;
+    padding: 5px 10px;
+    font-size: 0.76rem;
+  }
+
+  .sort-buttons {
+    position: sticky;
+    top: 8px;
+    z-index: 3;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 6px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .sort-btn {
+    flex: 1;
+    padding: 10px 0;
+    font-size: 0.86rem;
+  }
+
+  .article-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .sidebar-column {
+    display: block;
+  }
+
+  .sidebar {
+    gap: 0;
+  }
+
+  .sidebar-card {
+    margin-bottom: 12px;
+  }
+
+  .pagination-container {
+    margin-top: 16px;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .pagination-container :deep(.el-pagination) {
+    flex-wrap: nowrap;
+    min-width: max-content;
   }
 
   .featured-slide__cta {
     margin-top: 20px;
     padding: 10px 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    margin-top: 22px;
+  }
+
+  .featured-slide {
+    min-height: 240px;
+    padding: 18px 16px;
+  }
+
+  .featured-slide__content h2 {
+    font-size: 1.28rem;
+  }
+
+  .featured-slide__content p {
+    font-size: 0.86rem;
+  }
+
+  .featured-slide__meta span {
+    font-size: 0.72rem;
+  }
+
+  .sort-buttons {
+    top: 6px;
+    margin-bottom: 12px;
   }
 }
 </style>

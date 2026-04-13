@@ -608,39 +608,149 @@ onMounted(() => {
   }
 
   .forum-container {
-    width: calc(100vw - 24px);
+    width: calc(100vw - 20px);
+    margin-top: 10px;
+    padding-top: 0;
+    padding-bottom: 20px;
+    --forum-gap: 14px;
   }
 
   .left-sidebar {
     grid-row: auto;
-    margin-bottom: 16px;
+    margin-bottom: 0;
   }
 
   .right-sidebar {
     grid-column: auto;
-    margin-top: 16px;
+    margin-top: 0;
   }
 
   .left-sidebar,
   .right-sidebar {
     position: static;
+    min-width: 0;
   }
 
   .left-panel-shell,
   .right-panel-shell {
     position: static;
+    width: 100%;
     height: auto;
     overflow: visible;
+    border-radius: 20px;
   }
 
   .left-panel-shell {
-    padding: 22px 18px;
-    border-radius: 22px;
+    padding: 18px 16px;
+  }
+
+  .center-content {
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .left-nav-list {
+    gap: 8px;
+  }
+
+  .left-nav-item {
+    padding: 14px 14px;
+    border-radius: 16px;
+    font-size: 15px;
+  }
+
+  .left-nav-item em {
+    font-size: 22px;
+  }
+
+  .left-note {
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .post-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .post-pagination {
+    justify-content: flex-start;
+    padding-bottom: 8px;
+    overflow-x: auto;
+  }
+
+  .post-pagination :deep(.el-pagination) {
+    flex-wrap: nowrap;
+    min-width: max-content;
+    justify-content: flex-start;
+  }
+
+  .panel-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .hot-post-link,
+  .hot-tag-item {
+    padding: 10px 12px;
+    border-radius: 12px;
   }
 
   .feed-toolbar-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media screen and (max-width: 640px) {
+  .forum-container {
+    width: calc(100vw - 16px);
+    margin-top: 6px;
+    --forum-gap: 12px;
+  }
+
+  .sidebar-title {
+    margin-bottom: 14px;
+    font-size: 16px;
+  }
+
+  .sidebar-title.secondary {
+    margin-bottom: 12px;
+    font-size: 14px;
+  }
+
+  .left-section + .left-section {
+    margin-top: 16px;
+  }
+
+  .left-panel-shell,
+  .right-panel-shell {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+
+  .left-nav-item {
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  .left-nav-item em {
+    font-size: 18px;
+  }
+
+  .side-panel-scroll {
+    gap: 12px;
+  }
+
+  .hot-post-title {
+    max-width: 150px;
+  }
+
+  .empty-tip,
+  .loading-tip,
+  .error-tip {
+    font-size: 13px;
   }
 }
 

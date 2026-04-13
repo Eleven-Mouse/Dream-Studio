@@ -275,12 +275,77 @@ const sharePost = async () => {
 }
 
 @media screen and (max-width: 768px) {
+  .forum-post-card {
+    border-radius: 16px;
+  }
+
   .author-row {
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .card-badges {
+    flex-wrap: wrap;
+  }
+
+  .post-title {
+    margin: 12px 0 0;
+    line-height: 1.35;
+  }
+
+  .post-title a {
+    font-size: 1.14rem;
+  }
+
+  .post-summary {
+    margin: 10px 0 12px;
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+
+  .tag-list {
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .post-meta {
+    gap: 10px 14px;
+    font-size: 0.82rem;
+  }
+
+  .meta-action {
+    min-height: 28px;
   }
 
   .detail-link {
     margin-left: 0;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .forum-post-card {
+    margin-bottom: 10px;
+  }
+
+  .author-info {
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .author-time {
+    font-size: 11px;
+  }
+
+  .post-title a {
+    font-size: 1.04rem;
+  }
+
+  .post-summary {
+    font-size: 0.88rem;
+  }
+
+  .post-meta {
+    align-items: flex-start;
   }
 }
 </style>

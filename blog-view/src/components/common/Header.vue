@@ -121,10 +121,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onUnmounted, computed, h, nextTick } from 'vue'
+import { ref, onMounted, watch, onUnmounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchCategories } from '@/api/categories'
-import { fetchArticles } from '@/api/article.js'
+import { fetchAiArticleSearch } from '@/api/article.js'
 import { useAuthStore } from '@/store/auth'
 import { useUserStore } from '@/store/user'
 import { openAdminApp } from '@/utils/adminBridge'
@@ -162,7 +162,6 @@ const HEADER_HIDE_THRESHOLD = 90
 const HEADER_DIRECTION_THRESHOLD = 6
 
 const currentProfile = computed(() => userStore.profile)
-const isLoggedIn = computed(() => userStore.isLoggedIn)
 const displayName = computed(() => currentProfile.value.nickname)
 const userAvatar = computed(() => currentProfile.value.avatar)
 const userInitial = computed(() => displayName.value?.slice(0, 1)?.toUpperCase() || 'D')
@@ -292,10 +291,11 @@ watch(searchInput, (val) => {
     searchResults.value = []
     return
   }
+  // Header 搜索单独切到 AI 搜索接口，不影响原有文章列表接口行为。
   searchTimer = setTimeout(async () => {
     searchLoading.value = true
     try {
-      const res = await fetchArticles({ page: 1, size: 8, keyword })
+      const res = await fetchAiArticleSearch({ q: keyword, page: 1, size: 8 })
       searchResults.value = res?.data || []
     } catch (e) {
       console.error('搜索文章失败', e)
@@ -622,13 +622,121 @@ const handleLogout = async () => {
   }
 }
 
+@media screen and (max-width: 900px) {
+  .header-container {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 18px;
+  }
+
+  .logo {
+    order: 1;
+  }
+
+  .logo a {
+    font-size: 18px;
+  }
+
+  .search-bar {
+    order: 2;
+    margin: 0;
+  }
+
+  .user-entry {
+    order: 3;
+    margin-left: auto;
+    padding: 4px 8px;
+  }
+
+  .theme-switch {
+    order: 4;
+    margin-left: 0;
+  }
+
+  .github-link {
+    order: 5;
+    margin-left: 0;
+  }
+
+  .nav-menu {
+    order: 6;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .nav-menu::-webkit-scrollbar {
+    display: none;
+  }
+
+  :deep(.nav-menu .el-menu--horizontal) {
+    display: inline-flex;
+    min-width: max-content;
+  }
+
+  :deep(.nav-menu .el-menu-item),
+  :deep(.nav-menu .el-sub-menu__title) {
+    padding: 0 12px;
+    height: 40px;
+    line-height: 40px;
+  }
+}
+
 @media screen and (max-width: 700px) {
   .header-wrapper {
-    padding: 0px 4px 0;
+    padding: 0 4px 0;
   }
 
   .header-container {
-    padding: 0 4px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .search-bar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .user-entry {
+    padding: 0;
+    background: transparent;
+  }
+
+  .github-link {
+    display: none;
+  }
+
+  .search-overlay {
+    padding: 10vh 12px 0;
+    align-items: flex-start;
+  }
+
+  .search-modal {
+    width: 100%;
+    max-height: 72vh;
+    border-radius: 14px;
+  }
+
+  .search-modal-header {
+    padding: 16px 16px 10px;
+  }
+
+  .search-modal-body {
+    min-height: 160px;
+    padding: 0 16px 16px;
+  }
+
+  .search-result-item {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .search-result-category {
+    margin-left: 0;
   }
 }
 

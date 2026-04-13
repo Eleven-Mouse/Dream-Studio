@@ -38,10 +38,18 @@
         <jsqlparser.version>4.5</jsqlparser.version>
         <aws.sdk.version>2.32.18</aws.sdk.version>
         <springdoc.verson>2.8.16</springdoc.verson>
+        <spring-ai.version>1.1.4</spring-ai.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>dream-studio</groupId>
                 <artifactId>blog-common</artifactId>
